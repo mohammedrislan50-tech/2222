@@ -1,0 +1,1658 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sri Lanka Softball - Complete Tournament & OBS Broadcast System</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome & Lucide Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Teko:wght@500;600;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#fffbe1',
+                            100: '#fff3b8',
+                            400: '#fbbf24',
+                            500: '#f59e0b',
+                            600: '#d97706',
+                            900: '#78350f',
+                        },
+                        dark: {
+                            800: '#1e293b',
+                            900: '#0f172a',
+                            950: '#020617',
+                        },
+                        accent: {
+                            cyan: '#06b6d4',
+                            emerald: '#10b981',
+                            crimson: '#ef4444',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Outfit', 'sans-serif'],
+                        broadcast: ['Teko', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Canvas & Overlay Specific Styles */
+        .checkerboard {
+            background-color: #111827;
+            background-image: linear-gradient(45deg, #1f2937 25%, transparent 25%), 
+                              linear-gradient(-45deg, #1f2937 25%, transparent 25%), 
+                              linear-gradient(45deg, transparent 75%, #1f2937 75%), 
+                              linear-gradient(-45deg, transparent 75%, #1f2937 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+        }
+        .obs-transparent {
+            background-color: transparent !important;
+        }
+        .glow-gold {
+            box-shadow: 0 0 25px rgba(245, 158, 11, 0.35);
+        }
+        .glow-cyan {
+            box-shadow: 0 0 25px rgba(6, 182, 212, 0.35);
+        }
+        .glow-red {
+            box-shadow: 0 0 25px rgba(239, 68, 68, 0.35);
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+        /* Animations */
+        @keyframes pulseGlow {
+            0%, 100% { opacity: 0.8; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.03); }
+        }
+        .animate-pulse-glow {
+            animation: pulseGlow 2s infinite ease-in-out;
+        }
+        @keyframes slideInLeft {
+            from { transform: translateX(-100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .animate-slide-in {
+            animation: slideInLeft 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+    </style>
+</head>
+<body class="bg-dark-950 text-slate-100 font-sans antialiased min-h-screen flex flex-col selection:bg-brand-500 selection:text-dark-950">
+
+    <!-- APP CONTAINER -->
+    <div id="app" class="flex flex-col flex-1 min-h-screen">
+        <!-- HEADER / NAVIGATION -->
+        <header class="bg-dark-900 border-b border-slate-800 sticky top-0 z-50">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center justify-between h-16">
+                    <!-- Brand / Logo -->
+                    <div class="flex items-center space-x-3 cursor-pointer" onclick="navigate('dashboard')">
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-brand-400 flex items-center justify-center text-dark-950 font-black text-xl shadow-lg shadow-brand-500/20">
+                            <i class="fa-solid font-broadcast text-2xl">SL</i>
+                        </div>
+                        <div>
+                            <span class="font-extrabold text-lg tracking-tight bg-gradient-to-r from-white via-slate-200 to-brand-400 bg-clip-text text-transparent block leading-none">
+                                SRI LANKA SOFTBALL
+                            </span>
+                            <span class="text-[10px] text-brand-400 font-semibold tracking-widest uppercase block mt-0.5">
+                                Broadcast & Tournament Suite
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Desktop Nav Links -->
+                    <nav class="hidden md:flex space-x-1 text-sm font-medium" id="main-nav">
+                        <!-- JS populated -->
+                    </nav>
+
+                    <!-- User / Role Switcher -->
+                    <div class="flex items-center space-x-3">
+                        <!-- Active Tournament Shortcut indicator -->
+                        <div id="nav-active-tournament" class="hidden sm:flex items-center bg-slate-800/80 border border-slate-700/60 rounded-lg px-2.5 py-1 text-xs">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping mr-2"></span>
+                            <span id="active-tourney-name" class="text-slate-300 font-semibold truncate max-w-[120px]">No Tourney</span>
+                        </div>
+
+                        <!-- Role Selector Simulator -->
+                        <div class="relative group">
+                            <button class="flex items-center space-x-2 bg-slate-800 hover:bg-slate-700 text-xs px-3 py-1.5 rounded-lg border border-slate-700 transition">
+                                <i class="fa-solid fa-user-shield text-brand-400"></i>
+                                <span id="current-role-display" class="font-bold text-slate-200">Super Admin</span>
+                                <i class="fa-solid fa-chevron-down text-[10px] text-slate-400"></i>
+                            </button>
+                            <div class="absolute right-0 mt-1 w-48 bg-dark-900 border border-slate-700 rounded-xl shadow-2xl py-1 hidden group-hover:block z-50">
+                                <div class="px-3 py-1.5 text-[10px] uppercase font-bold text-slate-400 border-b border-slate-800">Switch Permission Role</div>
+                                <button onclick="switchRole('Super Admin')" class="w-full text-left px-3 py-1.5 text-xs hover:bg-slate-800 flex justify-between items-center">Super Admin <i class="fa-solid fa-check text-brand-400 hidden role-chk-super"></i></button>
+                                <button onclick="switchRole('Tournament Owner')" class="w-full text-left px-3 py-1.5 text-xs hover:bg-slate-800 flex justify-between items-center">Tournament Owner <i class="fa-solid fa-check text-brand-400 hidden role-chk-owner"></i></button>
+                                <button onclick="switchRole('Scorer')" class="w-full text-left px-3 py-1.5 text-xs hover:bg-slate-800 flex justify-between items-center">Scorer <i class="fa-solid fa-check text-brand-400 hidden role-chk-scorer"></i></button>
+                                <button onclick="switchRole('Graphics Operator')" class="w-full text-left px-3 py-1.5 text-xs hover:bg-slate-800 flex justify-between items-center">Graphics Operator <i class="fa-solid fa-check text-brand-400 hidden role-chk-graphics"></i></button>
+                                <button onclick="switchRole('Viewer')" class="w-full text-left px-3 py-1.5 text-xs hover:bg-slate-800 flex justify-between items-center">Viewer <i class="fa-solid fa-check text-brand-400 hidden role-chk-viewer"></i></button>
+                            </div>
+                        </div>
+
+                        <!-- Mobile Menu Button -->
+                        <button onclick="toggleMobileNav()" class="md:hidden text-slate-300 hover:text-white p-2">
+                            <i class="fa-solid fa-bars text-xl"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mobile Nav Dropdown -->
+            <div id="mobile-nav" class="hidden md:hidden border-t border-slate-800 bg-dark-900 px-4 pt-2 pb-4 space-y-1">
+                <!-- JS populated -->
+            </div>
+        </header>
+
+        <!-- MAIN VIEW PORT (Dynamic Component Mounting) -->
+        <main id="main-content" class="flex-1 flex flex-col min-h-0 bg-dark-950">
+            <!-- Rendered by JS Router -->
+        </main>
+
+        <!-- GLOBAL MODAL CONTAINER -->
+        <div id="global-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+            <div id="global-modal-content" class="bg-dark-900 border border-slate-700 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl">
+                <!-- Modal Dynamic Payload -->
+            </div>
+        </div>
+
+        <!-- GLOBAL TOAST NOTIFICATION -->
+        <div id="toast-container" class="fixed bottom-5 right-5 z-50 space-y-2 pointer-events-none"></div>
+    </div>
+
+    <!-- MAIN SCRIPT APP APPLICATION LOGIC -->
+    <script>
+        // ==========================================
+        // APP INITIAL STATE & LOCAL/IN-MEMORY DATABASE
+        // ==========================================
+
+        const DB_KEY = 'SL_SOFTBALL_APP_DB_V1';
+
+        // Preloaded Default Design Packs
+        const DEFAULT_DESIGN_PACKS = [
+            {
+                id: 'dp-gold',
+                name: 'Design 1 — Gold Sports Pack',
+                description: 'Sleek dark broadcast template with metallic gold accents & bold high-visibility scoreboards.',
+                cover: 'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?w=500&auto=format&fit=crop&q=60',
+                theme: { primary: '#f59e0b', secondary: '#0f172a', text: '#ffffff', accent: '#fbbf24' },
+                scenes: {
+                    'welcome': {
+                        name: 'Welcome Scene',
+                        layers: [
+                            { id: 'bg', type: 'bg', color: '#0f172a', opacity: 1 },
+                            { id: 'title', type: 'text', text: 'WELCOME TO {{TOURNAMENT_NAME}}', x: 200, y: 350, fontSize: 58, color: '#f59e0b', fontWeight: '800' },
+                            { id: 'sub', type: 'text', text: 'LIVE FROM {{VENUE}}', x: 200, y: 440, fontSize: 32, color: '#ffffff', fontWeight: '500' },
+                            { id: 'badge', type: 'shape', x: 200, y: 250, w: 250, h: 60, color: '#f59e0b', radius: 8 }
+                        ]
+                    },
+                    'squad': {
+                        name: 'Team Squad / Playing XI',
+                        layers: [
+                            { id: 'bg', type: 'bg', color: '#0f172a', opacity: 0.95 },
+                            { id: 'title', type: 'text', text: '{{TEAM_A_NAME}} - SQUAD', x: 150, y: 100, fontSize: 48, color: '#f59e0b', fontWeight: '800' },
+                            { id: 'p1', type: 'text', text: '1. {{STRIKER_NAME}} (Capt)', x: 150, y: 220, fontSize: 28, color: '#ffffff', fontWeight: '600' },
+                            { id: 'p2', type: 'text', text: '2. {{NON_STRIKER_NAME}}', x: 150, y: 280, fontSize: 28, color: '#ffffff', fontWeight: '600' },
+                            { id: 'p3', type: 'text', text: '3. {{BOWLER_NAME}}', x: 150, y: 340, fontSize: 28, color: '#ffffff', fontWeight: '600' }
+                        ]
+                    },
+                    'toss': {
+                        name: 'Toss Scene',
+                        layers: [
+                            { id: 'bg', type: 'bg', color: '#0f172a', opacity: 0.9 },
+                            { id: 'heading', type: 'text', text: 'MATCH TOSS UPDATE', x: 100, y: 100, fontSize: 40, color: '#f59e0b', fontWeight: '800' },
+                            { id: 'winner', type: 'text', text: '{{TOSS_WINNER}} WON THE TOSS', x: 100, y: 220, fontSize: 36, color: '#ffffff', fontWeight: '700' },
+                            { id: 'decision', type: 'text', text: 'ELECTED TO {{TOSS_DECISION}} FIRST', x: 100, y: 280, fontSize: 30, color: '#fbbf24', fontWeight: '600' }
+                        ]
+                    },
+                    'scoreboard': {
+                        name: 'Main Scoreboard Lower-Third',
+                        layers: [
+                            { id: 'bar', type: 'shape', x: 100, y: 880, w: 1720, h: 140, color: '#0f172a', radius: 16 },
+                            { id: 'team_a', type: 'text', text: '{{TEAM_A_NAME}}: {{TEAM_A_SCORE}}/{{TEAM_A_WICKETS}} ({{TEAM_A_OVERS}} ov)', x: 140, y: 920, fontSize: 34, color: '#f59e0b', fontWeight: '800' },
+                            { id: 'vs', type: 'text', text: 'VS', x: 800, y: 920, fontSize: 28, color: '#94a3b8', fontWeight: '700' },
+                            { id: 'team_b', type: 'text', text: '{{TEAM_B_NAME}}: {{TEAM_B_SCORE}}/{{TEAM_B_WICKETS}}', x: 880, y: 920, fontSize: 34, color: '#ffffff', fontWeight: '800' },
+                            { id: 'batsmen', type: 'text', text: '* {{STRIKER_NAME}} {{STRIKER_RUNS}}*({{STRIKER_BALLS}})  |  {{NON_STRIKER_NAME}} {{NON_STRIKER_RUNS}}({{NON_STRIKER_BALLS}})', x: 140, y: 975, fontSize: 22, color: '#e2e8f0', fontWeight: '500' },
+                            { id: 'bowler', type: 'text', text: 'BOWLING: {{BOWLER_NAME}} {{BOWLER_WICKETS}}-{{BOWLER_RUNS}} ({{BOWLER_OVERS}})', x: 1100, y: 975, fontSize: 22, color: '#fbbf24', fontWeight: '500' }
+                        ]
+                    },
+                    'batsman': {
+                        name: 'Batsman Profile Lower-Third',
+                        layers: [
+                            { id: 'card', type: 'shape', x: 100, y: 780, w: 700, h: 200, color: '#0f172a', radius: 12 },
+                            { id: 'bname', type: 'text', text: '{{STRIKER_NAME}}', x: 140, y: 820, fontSize: 36, color: '#f59e0b', fontWeight: '800' },
+                            { id: 'stats', type: 'text', text: 'RUNS: {{STRIKER_RUNS}}   BALLS: {{STRIKER_BALLS}}   4s: {{STRIKER_FOURS}}   6s: {{STRIKER_SIXES}}', x: 140, y: 880, fontSize: 26, color: '#ffffff', fontWeight: '600' },
+                            { id: 'sr', type: 'text', text: 'STRIKE RATE: {{STRIKER_STRIKE_RATE}}', x: 140, y: 925, fontSize: 20, color: '#94a3b8', fontWeight: '500' }
+                        ]
+                    },
+                    'bowler': {
+                        name: 'Bowler Card',
+                        layers: [
+                            { id: 'card', type: 'shape', x: 1100, y: 780, w: 700, h: 200, color: '#0f172a', radius: 12 },
+                            { id: 'bwname', type: 'text', text: '{{BOWLER_NAME}}', x: 1140, y: 820, fontSize: 36, color: '#f59e0b', fontWeight: '800' },
+                            { id: 'stats', type: 'text', text: 'OVERS: {{BOWLER_OVERS}}   RUNS: {{BOWLER_RUNS}}   WICKETS: {{BOWLER_WICKETS}}', x: 1140, y: 880, fontSize: 26, color: '#ffffff', fontWeight: '600' },
+                            { id: 'eco', type: 'text', text: 'ECONOMY: {{BOWLER_ECONOMY}}', x: 1140, y: 925, fontSize: 20, color: '#94a3b8', fontWeight: '500' }
+                        ]
+                    },
+                    'wicket': {
+                        name: 'Wicket Graphic',
+                        layers: [
+                            { id: 'bg', type: 'shape', x: 500, y: 300, w: 920, h: 480, color: '#7f1d1d', radius: 24 },
+                            { id: 'out', type: 'text', text: 'WICKET! OUT!', x: 720, y: 380, fontSize: 72, color: '#ffffff', fontWeight: '900' },
+                            { id: 'batter', type: 'text', text: '{{STRIKER_NAME}} DISMISSED', x: 620, y: 480, fontSize: 38, color: '#fef08a', fontWeight: '700' },
+                            { id: 'score', type: 'text', text: 'SCORE: {{TEAM_A_SCORE}}/{{TEAM_A_WICKETS}} ({{TEAM_A_OVERS}} ov)', x: 650, y: 560, fontSize: 32, color: '#ffffff', fontWeight: '600' }
+                        ]
+                    },
+                    'match_result': {
+                        name: 'Match Result Scene',
+                        layers: [
+                            { id: 'bg', type: 'bg', color: '#0f172a', opacity: 0.95 },
+                            { id: 'header', type: 'text', text: 'MATCH RESULT', x: 200, y: 200, fontSize: 64, color: '#f59e0b', fontWeight: '900' },
+                            { id: 'res', type: 'text', text: '{{MATCH_RESULT}}', x: 200, y: 320, fontSize: 44, color: '#ffffff', fontWeight: '800' }
+                        ]
+                    }
+                }
+            },
+            {
+                id: 'dp-blue',
+                name: 'Design 2 — Blue Broadcast Pack',
+                description: 'High-tech Cyan & Electric Blue theme designed for TV & high-definition digital streams.',
+                cover: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=500&auto=format&fit=crop&q=60',
+                theme: { primary: '#06b6d4', secondary: '#0284c7', text: '#ffffff', accent: '#38bdf8' },
+                scenes: {
+                    'welcome': {
+                        name: 'Welcome Scene',
+                        layers: [
+                            { id: 'bg', type: 'bg', color: '#0284c7', opacity: 0.9 },
+                            { id: 'title', type: 'text', text: '{{TOURNAMENT_NAME}}', x: 200, y: 380, fontSize: 60, color: '#06b6d4', fontWeight: '900' },
+                            { id: 'sub', type: 'text', text: 'LIVE STREAMING OVERLAY - {{VENUE}}', x: 200, y: 470, fontSize: 28, color: '#ffffff', fontWeight: '600' }
+                        ]
+                    },
+                    'scoreboard': {
+                        name: 'Main Scoreboard Lower-Third',
+                        layers: [
+                            { id: 'bar', type: 'shape', x: 100, y: 880, w: 1720, h: 140, color: '#0f172a', radius: 8 },
+                            { id: 'team_a', type: 'text', text: '{{TEAM_A_NAME}} {{TEAM_A_SCORE}}-{{TEAM_A_WICKETS}} ({{TEAM_A_OVERS}})', x: 140, y: 920, fontSize: 34, color: '#06b6d4', fontWeight: '800' },
+                            { id: 'batsmen', type: 'text', text: 'STRIKER: {{STRIKER_NAME}} {{STRIKER_RUNS}} ({{STRIKER_BALLS}})', x: 140, y: 975, fontSize: 22, color: '#ffffff', fontWeight: '500' }
+                        ]
+                    }
+                }
+            },
+            {
+                id: 'dp-red',
+                name: 'Design 3 — Red Championship Pack',
+                description: 'Aggressive energetic red metallic theme ideal for knockout cup finals and night matches.',
+                cover: 'https://images.unsplash.com/photo-1531415074968-036ba1b575da?w=500&auto=format&fit=crop&q=60',
+                theme: { primary: '#ef4444', secondary: '#7f1d1d', text: '#ffffff', accent: '#fca5a5' },
+                scenes: {
+                    'welcome': {
+                        name: 'Welcome Scene',
+                        layers: [
+                            { id: 'bg', type: 'bg', color: '#450a0a', opacity: 0.9 },
+                            { id: 'title', type: 'text', text: 'CHAMPIONSHIP TOUR: {{TOURNAMENT_NAME}}', x: 150, y: 350, fontSize: 54, color: '#ef4444', fontWeight: '900' }
+                        ]
+                    },
+                    'scoreboard': {
+                        name: 'Main Scoreboard Lower-Third',
+                        layers: [
+                            { id: 'bar', type: 'shape', x: 100, y: 880, w: 1720, h: 140, color: '#450a0a', radius: 12 },
+                            { id: 'team_a', type: 'text', text: '{{TEAM_A_NAME}}: {{TEAM_A_SCORE}}/{{TEAM_A_WICKETS}}', x: 140, y: 920, fontSize: 34, color: '#fca5a5', fontWeight: '800' }
+                        ]
+                    }
+                }
+            }
+        ];
+
+        // Global State Manager
+        let state = {
+            currentRole: 'Super Admin',
+            currentRoute: 'dashboard',
+            activeTournamentId: null,
+            tournaments: [],
+            teams: [],
+            players: [],
+            matches: [],
+            designPacks: [],
+            mediaLibrary: [
+                { id: 'm1', name: 'SL Softball Official Logo', type: 'image', url: 'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?w=150&auto=format&fit=crop&q=60' },
+                { id: 'm2', name: 'Sponsor - Dialog Premier', type: 'image', url: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=150&auto=format&fit=crop&q=60' }
+            ],
+            sponsors: [
+                { id: 'sp1', name: 'Dialog Axiata', logo: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=150&auto=format&fit=crop&q=60', active: true }
+            ],
+            // Studio State
+            selectedDesignPackId: 'dp-gold',
+            selectedSceneKey: 'scoreboard',
+            studioCanvasZoom: 100,
+            selectedLayerId: null,
+            // Broadcast Channel for OBS cross-tab real-time sync
+            broadcastChannel: null
+        };
+
+        // Initialize Store
+        function initStore() {
+            // Setup Cross-Tab Broadcast Channel
+            try {
+                state.broadcastChannel = new BroadcastChannel('sl_softball_obs_sync');
+                state.broadcastChannel.onmessage = (event) => {
+                    if (event.data && event.data.type === 'STATE_UPDATED') {
+                        loadFromLocalStorage(false);
+                        renderCurrentRoute();
+                    }
+                };
+            } catch (e) {
+                console.warn('BroadcastChannel not supported or blocked:', e);
+            }
+
+            const stored = localStorage.getItem(DB_KEY);
+            if (stored) {
+                try {
+                    const parsed = JSON.parse(stored);
+                    state.tournaments = parsed.tournaments || [];
+                    state.teams = parsed.teams || [];
+                    state.players = parsed.players || [];
+                    state.matches = parsed.matches || [];
+                    state.designPacks = parsed.designPacks || DEFAULT_DESIGN_PACKS;
+                    state.sponsors = parsed.sponsors || state.sponsors;
+                } catch (err) {
+                    console.error('Failed to parse state:', err);
+                    seedInitialData();
+                }
+            } else {
+                seedInitialData();
+            }
+
+            if (state.tournaments.length > 0 && !state.activeTournamentId) {
+                state.activeTournamentId = state.tournaments[0].id;
+            }
+        }
+
+        function saveStore() {
+            const dataToSave = {
+                tournaments: state.tournaments,
+                teams: state.teams,
+                players: state.players,
+                matches: state.matches,
+                designPacks: state.designPacks,
+                sponsors: state.sponsors
+            };
+            localStorage.setItem(DB_KEY, JSON.stringify(dataToSave));
+            if (state.broadcastChannel) {
+                state.broadcastChannel.postMessage({ type: 'STATE_UPDATED', timestamp: Date.now() });
+            }
+        }
+
+        function loadFromLocalStorage(triggerRender = true) {
+            const stored = localStorage.getItem(DB_KEY);
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                state.tournaments = parsed.tournaments || [];
+                state.teams = parsed.teams || [];
+                state.players = parsed.players || [];
+                state.matches = parsed.matches || [];
+                state.designPacks = parsed.designPacks || DEFAULT_DESIGN_PACKS;
+            }
+            if (triggerRender) renderCurrentRoute();
+        }
+
+        function seedInitialData() {
+            state.designPacks = DEFAULT_DESIGN_PACKS;
+
+            // Seed Tournament
+            const tourneyId = 'tourney-' + Date.now();
+            const obsUrl = `${window.location.origin}${window.location.pathname}?obs=${tourneyId}`;
+            
+            const sampleTourney = {
+                id: tourneyId,
+                name: 'Sri Lanka Premier Softball Super Cup 2026',
+                logo: 'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?w=200&auto=format&fit=crop&q=60',
+                type: 'League',
+                startDate: '2026-03-10',
+                endDate: '2026-03-15',
+                datesDisplay: 'Multiple Days (6 Days)',
+                venue: 'Galle International Stadium',
+                description: 'The biggest softball cricket extravaganza in Sri Lanka featuring top 8 teams.',
+                organiser: 'Sri Lanka Softball Cricket Federation',
+                numberOfTeams: 8,
+                numberOfGroups: 2,
+                oversPerMatch: 6,
+                ballsPerOver: 6,
+                numberOfWickets: 10,
+                selected_design_set_id: 'dp-gold',
+                obsLink: obsUrl,
+                status: 'Live',
+                activeSceneKey: 'scoreboard', // Published active broadcast scene
+                createdAt: new Date().toISOString()
+            };
+
+            state.tournaments.push(sampleTourney);
+            state.activeTournamentId = tourneyId;
+
+            // Seed Teams
+            const team1 = { id: 'team-1', tournamentId: tourneyId, fullName: 'Colombo Kings Softball XI', shortName: 'CKS', group: 'Group A', captain: 'Kumara Sangakkara', logo: 'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?w=100&auto=format&fit=crop&q=60' };
+            const team2 = { id: 'team-2', tournamentId: tourneyId, fullName: 'Kandy Warriors Club', shortName: 'KWC', group: 'Group A', captain: 'Muttiah Muralitharan', logo: 'https://images.unsplash.com/photo-1531415074968-036ba1b575da?w=100&auto=format&fit=crop&q=60' };
+            state.teams.push(team1, team2);
+
+            // Seed Players
+            const players = [
+                { id: 'p1', teamId: 'team-1', fullName: 'Dinesh Chandimal', nickname: 'Chandi', jerseyNumber: '36', role: 'Batsman', battingStyle: 'Right Hand', bowlingStyle: 'Right-arm off break', isCaptain: true, photo: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=60' },
+                { id: 'p2', teamId: 'team-1', fullName: 'Kusal Perera', nickname: 'AK47', jerseyNumber: '55', role: 'Batsman', battingStyle: 'Left Hand', bowlingStyle: 'None', isCaptain: false, photo: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=60' },
+                { id: 'p3', teamId: 'team-1', fullName: 'Lasith Malinga', nickname: 'Slinga', jerseyNumber: '99', role: 'Bowler', battingStyle: 'Right Hand', bowlingStyle: 'Right-arm Fast', isCaptain: false, photo: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&auto=format&fit=crop&q=60' },
+                { id: 'p4', teamId: 'team-2', fullName: 'Pathum Nissanka', nickname: 'Pathu', jerseyNumber: '18', role: 'Batsman', battingStyle: 'Right Hand', bowlingStyle: 'None', isCaptain: true, photo: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=60' },
+                { id: 'p5', teamId: 'team-2', fullName: 'Wanindu Hasaranga', nickname: 'Wani', jerseyNumber: '49', role: 'All-Rounder', battingStyle: 'Right Hand', bowlingStyle: 'Right-arm Leg Break', isCaptain: false, photo: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=60' }
+            ];
+            state.players.push(...players);
+
+            // Seed Match
+            const matchId = 'match-' + Date.now();
+            const sampleMatch = {
+                id: matchId,
+                tournamentId: tourneyId,
+                matchNumber: 1,
+                title: 'Match 01 - Group A Opener',
+                matchType: 'League Match',
+                date: '2026-03-10',
+                time: '10:00 AM',
+                venue: 'Galle International Stadium',
+                overs: 6,
+                ballsPerOver: 6,
+                teamAId: 'team-1',
+                teamBId: 'team-2',
+                tossWinnerId: 'team-1',
+                tossDecision: 'BAT',
+                status: 'Live',
+                // Live Scoring State
+                innings: 1,
+                teamAScore: 48,
+                teamAWickets: 2,
+                teamAOvers: 3.4,
+                teamBScore: 0,
+                teamBWickets: 0,
+                teamBOvers: 0.0,
+                strikerId: 'p1',
+                strikerStats: { runs: 28, balls: 12, fours: 3, sixes: 2 },
+                nonStrikerId: 'p2',
+                nonStrikerStats: { runs: 14, balls: 8, fours: 1, sixes: 1 },
+                currentBowlerId: 'p5',
+                bowlerStats: { overs: 0.4, runs: 6, wickets: 1, maidens: 0 },
+                currentOverBalls: [2, 4, 'W', 0],
+                historyStack: [] // Multi-step undo stack
+            };
+            state.matches.push(sampleMatch);
+
+            saveStore();
+        }
+
+        // ==========================================
+        // ROUTING & PERMISSIONS NAVIGATION
+        // ==========================================
+
+        const NAV_ITEMS = [
+            { id: 'dashboard', label: 'Home', icon: 'fa-house', roles: ['Super Admin', 'Tournament Owner', 'Scorer', 'Graphics Operator', 'Viewer'] },
+            { id: 'tournaments', label: 'Tournaments', icon: 'fa-trophy', roles: ['Super Admin', 'Tournament Owner', 'Scorer', 'Graphics Operator', 'Viewer'] },
+            { id: 'teams', label: 'Teams & Squads', icon: 'fa-users', roles: ['Super Admin', 'Tournament Owner', 'Scorer', 'Graphics Operator'] },
+            { id: 'scoring', label: 'Live Scoring', icon: 'fa-mobile-screen-button', roles: ['Super Admin', 'Tournament Owner', 'Scorer'] },
+            { id: 'studio', label: 'Graphics Studio', icon: 'fa-palette', roles: ['Super Admin', 'Tournament Owner', 'Graphics Operator'] },
+            { id: 'controlroom', label: 'Live Control Room', icon: 'fa-headset', roles: ['Super Admin', 'Tournament Owner', 'Graphics Operator'] },
+            { id: 'reports', label: 'Stats & Reports', icon: 'fa-chart-column', roles: ['Super Admin', 'Tournament Owner', 'Scorer', 'Graphics Operator', 'Viewer'] }
+        ];
+
+        function renderNav() {
+            const mainNavEl = document.getElementById('main-nav');
+            const mobileNavEl = document.getElementById('mobile-nav');
+
+            let mainHtml = '';
+            let mobileHtml = '';
+
+            NAV_ITEMS.forEach(item => {
+                const hasAccess = item.roles.includes(state.currentRole);
+                if (!hasAccess) return;
+
+                const isActive = state.currentRoute === item.id;
+                const activeClass = isActive 
+                    ? 'bg-brand-500 text-dark-950 font-bold shadow-md shadow-brand-500/20' 
+                    : 'text-slate-300 hover:bg-slate-800 hover:text-white';
+
+                mainHtml += `
+                    <button onclick="navigate('${item.id}')" class="px-3 py-2 rounded-lg ${activeClass} transition flex items-center space-x-2">
+                        <i class="fa-solid ${item.icon} text-xs"></i>
+                        <span>${item.label}</span>
+                    </button>
+                `;
+
+                mobileHtml += `
+                    <button onclick="navigate('${item.id}'); toggleMobileNav();" class="w-full text-left px-3 py-2 rounded-lg ${activeClass} flex items-center space-x-3">
+                        <i class="fa-solid ${item.icon}"></i>
+                        <span>${item.label}</span>
+                    </button>
+                `;
+            });
+
+            mainNavEl.innerHTML = mainHtml;
+            mobileNavEl.innerHTML = mobileHtml;
+
+            // Active Tournament Indicator
+            const tourney = getActiveTournament();
+            const activeTourneyEl = document.getElementById('active-tourney-name');
+            if (tourney && activeTourneyEl) {
+                activeTourneyEl.innerText = tourney.name;
+            }
+        }
+
+        function switchRole(role) {
+            state.currentRole = role;
+            document.getElementById('current-role-display').innerText = role;
+            showToast(`Switched to ${role} Role permissions`, 'info');
+            renderNav();
+            renderCurrentRoute();
+        }
+
+        function navigate(route, params = {}) {
+            state.currentRoute = route;
+            if (params.tournamentId) state.activeTournamentId = params.tournamentId;
+            renderNav();
+            renderCurrentRoute(params);
+            window.scrollTo(0, 0);
+        }
+
+        function toggleMobileNav() {
+            const nav = document.getElementById('mobile-nav');
+            nav.classList.toggle('hidden');
+        }
+
+        function getActiveTournament() {
+            return state.tournaments.find(t => t.id === state.activeTournamentId) || state.tournaments[0];
+        }
+
+        function getActiveMatch() {
+            const tourney = getActiveTournament();
+            if (!tourney) return null;
+            return state.matches.find(m => m.tournamentId === tourney.id && m.status === 'Live') || 
+                   state.matches.find(m => m.tournamentId === tourney.id) || state.matches[0];
+        }
+
+        // ==========================================
+        // ROUTE RENDER SWITCHER
+        // ==========================================
+
+        function renderCurrentRoute(params = {}) {
+            // Check if this page is called as an OBS Overlay Route via Query Params
+            const urlParams = new URLSearchParams(window.location.search);
+            const obsTournamentId = urlParams.get('obs');
+            if (obsTournamentId) {
+                renderOBSOverlayView(obsTournamentId);
+                return;
+            }
+
+            const container = document.getElementById('main-content');
+            
+            switch (state.currentRoute) {
+                case 'dashboard':
+                    container.innerHTML = renderDashboardView();
+                    break;
+                case 'tournaments':
+                    container.innerHTML = renderTournamentsView();
+                    break;
+                case 'tournament_wizard':
+                    container.innerHTML = renderTournamentWizardView();
+                    break;
+                case 'teams':
+                    container.innerHTML = renderTeamsView();
+                    break;
+                case 'scoring':
+                    container.innerHTML = renderLiveScoringView();
+                    break;
+                case 'studio':
+                    container.innerHTML = renderGraphicsStudioView();
+                    break;
+                case 'controlroom':
+                    container.innerHTML = renderControlRoomView();
+                    break;
+                case 'reports':
+                    container.innerHTML = renderReportsView();
+                    break;
+                default:
+                    container.innerHTML = renderDashboardView();
+            }
+        }
+
+        // ==========================================
+        // MODULE 1 & 2: HOME DASHBOARD & AUTH ROLES
+        // ==========================================
+
+        function renderDashboardView() {
+            const activeTourney = getActiveTournament();
+            const liveMatches = state.matches.filter(m => m.status === 'Live');
+            const recentTourneys = [...state.tournaments].reverse().slice(0, 4);
+
+            return `
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full space-y-8 animate-slide-in">
+                    <!-- Welcome Hero Banner -->
+                    <div class="bg-gradient-to-r from-dark-900 via-slate-900 to-dark-800 border border-slate-800 rounded-3xl p-6 sm:p-8 relative overflow-hidden shadow-2xl">
+                        <div class="absolute -right-10 -bottom-10 w-80 h-80 bg-brand-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                        <div class="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                            <div class="space-y-2">
+                                <div class="inline-flex items-center space-x-2 bg-brand-500/10 border border-brand-500/30 rounded-full px-3 py-1 text-xs text-brand-400 font-bold">
+                                    <i class="fa-solid fa-bolt"></i>
+                                    <span>PROFESSIONAL SOFTBALL BROADCAST ENGINE</span>
+                                </div>
+                                <h1 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
+                                    Sri Lanka Softball Tournament Hub
+                                </h1>
+                                <p class="text-slate-400 text-sm max-w-2xl">
+                                    Manage tournaments, live scores, generate permanent OBS overlays, design broadcast design packs & control broadcast streams in real time.
+                                </p>
+                            </div>
+
+                            <div class="flex flex-wrap items-center gap-3">
+                                ${['Super Admin', 'Tournament Owner'].includes(state.currentRole) ? `
+                                    <button onclick="navigate('tournament_wizard')" class="bg-brand-500 hover:bg-brand-600 text-dark-950 font-bold px-5 py-3 rounded-xl shadow-lg shadow-brand-500/25 transition flex items-center space-x-2">
+                                        <i class="fa-solid fa-plus text-sm"></i>
+                                        <span>Create Tournament</span>
+                                    </button>
+                                ` : ''}
+                                <button onclick="navigate('studio')" class="bg-slate-800 hover:bg-slate-700 text-white font-semibold px-5 py-3 rounded-xl border border-slate-700 transition flex items-center space-x-2">
+                                    <i class="fa-solid fa-palette text-brand-400"></i>
+                                    <span>Graphics Studio</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Metrics & Live Match Strip -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="bg-dark-900 border border-slate-800 rounded-2xl p-5 flex items-center space-x-4">
+                            <div class="w-12 h-12 rounded-xl bg-brand-500/10 text-brand-400 flex items-center justify-center text-xl font-bold">
+                                <i class="fa-solid fa-trophy"></i>
+                            </div>
+                            <div>
+                                <div class="text-2xl font-black text-white">${state.tournaments.length}</div>
+                                <div class="text-xs text-slate-400 font-medium">Active Tournaments</div>
+                            </div>
+                        </div>
+
+                        <div class="bg-dark-900 border border-slate-800 rounded-2xl p-5 flex items-center space-x-4">
+                            <div class="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-xl font-bold">
+                                <i class="fa-solid fa-tower-broadcast animate-pulse"></i>
+                            </div>
+                            <div>
+                                <div class="text-2xl font-black text-white">${liveMatches.length}</div>
+                                <div class="text-xs text-slate-400 font-medium">Live Matches Streaming</div>
+                            </div>
+                        </div>
+
+                        <div class="bg-dark-900 border border-slate-800 rounded-2xl p-5 flex items-center space-x-4">
+                            <div class="w-12 h-12 rounded-xl bg-accent-cyan/10 text-accent-cyan flex items-center justify-center text-xl font-bold">
+                                <i class="fa-solid fa-users"></i>
+                            </div>
+                            <div>
+                                <div class="text-2xl font-black text-white">${state.teams.length}</div>
+                                <div class="text-xs text-slate-400 font-medium">Registered Teams</div>
+                            </div>
+                        </div>
+
+                        <div class="bg-dark-900 border border-slate-800 rounded-2xl p-5 flex items-center space-x-4">
+                            <div class="w-12 h-12 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center text-xl font-bold">
+                                <i class="fa-solid fa-layer-group"></i>
+                            </div>
+                            <div>
+                                <div class="text-2xl font-black text-white">${state.designPacks.length}</div>
+                                <div class="text-xs text-slate-400 font-medium">Broadcast Design Packs</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tournament Directory Section -->
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <h2 class="text-xl font-bold text-white flex items-center space-x-2">
+                                <i class="fa-solid fa-list-check text-brand-400"></i>
+                                <span>Recent Tournaments</span>
+                            </h2>
+                            <button onclick="navigate('tournaments')" class="text-xs text-brand-400 hover:text-brand-300 font-bold">
+                                View All (${state.tournaments.length}) &rarr;
+                            </button>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            ${recentTourneys.map(t => renderTournamentCard(t)).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderTournamentCard(tourney) {
+            const pack = state.designPacks.find(p => p.id === tourney.selected_design_set_id) || state.designPacks[0];
+            const teamsCount = state.teams.filter(tm => tm.tournamentId === tourney.id).length;
+            const matchesCount = state.matches.filter(m => m.tournamentId === tourney.id).length;
+
+            return `
+                <div class="bg-dark-900 border border-slate-800 rounded-2xl p-5 flex flex-col justify-between space-y-4 hover:border-slate-700 transition shadow-xl group">
+                    <div class="space-y-3">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="flex items-center space-x-3">
+                                <img src="${tourney.logo}" class="w-12 h-12 rounded-xl object-cover border border-slate-700 bg-slate-800">
+                                <div>
+                                    <h3 class="font-bold text-white text-base group-hover:text-brand-400 transition leading-tight">${tourney.name}</h3>
+                                    <p class="text-xs text-slate-400 flex items-center space-x-1 mt-0.5">
+                                        <i class="fa-solid fa-location-dot text-slate-500"></i>
+                                        <span>${tourney.venue}</span>
+                                    </p>
+                                </div>
+                            </div>
+                            <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase ${tourney.status === 'Live' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-slate-800 text-slate-400'}">
+                                ${tourney.status}
+                            </span>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2 text-xs bg-slate-800/50 p-2.5 rounded-xl border border-slate-800">
+                            <div>
+                                <span class="text-slate-500 block text-[10px]">FORMAT</span>
+                                <span class="font-bold text-slate-200">${tourney.type} (${tourney.oversPerMatch} Overs)</span>
+                            </div>
+                            <div>
+                                <span class="text-slate-500 block text-[10px]">DESIGN PACK</span>
+                                <span class="font-bold text-brand-400 truncate block">${pack.name}</span>
+                            </div>
+                            <div>
+                                <span class="text-slate-500 block text-[10px]">TEAMS / MATCHES</span>
+                                <span class="font-bold text-slate-200">${teamsCount} Teams | ${matchesCount} Matches</span>
+                            </div>
+                            <div>
+                                <span class="text-slate-500 block text-[10px]">DATES</span>
+                                <span class="font-bold text-slate-200">${tourney.datesDisplay || '1 Day'}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Actions Strip -->
+                    <div class="pt-2 border-t border-slate-800/80 flex flex-wrap gap-2">
+                        <button onclick="navigate('scoring', {tournamentId: '${tourney.id}'})" class="flex-1 bg-brand-500 hover:bg-brand-600 text-dark-950 text-xs font-bold py-2 px-3 rounded-lg transition flex items-center justify-center space-x-1">
+                            <i class="fa-solid fa-mobile-screen"></i>
+                            <span>Live Score</span>
+                        </button>
+
+                        <button onclick="navigate('controlroom', {tournamentId: '${tourney.id}'})" class="flex-1 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold py-2 px-3 rounded-lg border border-slate-700 transition flex items-center justify-center space-x-1">
+                            <i class="fa-solid fa-sliders"></i>
+                            <span>Control Room</span>
+                        </button>
+
+                        <button onclick="copyOBSLink('${tourney.id}')" title="Copy Permanent OBS Link" class="bg-slate-800 hover:bg-brand-500 hover:text-dark-950 text-slate-300 text-xs py-2 px-3 rounded-lg border border-slate-700 transition">
+                            <i class="fa-solid fa-link"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ==========================================
+        // MODULE 3: TOURNAMENT CREATION WIZARD
+        // ==========================================
+
+        function renderTournamentWizardView() {
+            return `
+                <div class="max-w-4xl mx-auto px-4 py-8 w-full space-y-6 animate-slide-in">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+                        <div>
+                            <h1 class="text-2xl font-black text-white">Create New Tournament</h1>
+                            <p class="text-xs text-slate-400">Configure settings, rules, auto-generate groups & select permanent broadcast design pack.</p>
+                        </div>
+                        <button onclick="navigate('dashboard')" class="text-xs text-slate-400 hover:text-white">Cancel</button>
+                    </div>
+
+                    <form onsubmit="handleCreateTournament(event)" class="space-y-6">
+                        <!-- Basic Information -->
+                        <div class="bg-dark-900 border border-slate-800 rounded-2xl p-6 space-y-4">
+                            <h2 class="text-base font-bold text-brand-400 uppercase tracking-wider">1. Tournament Details</h2>
+                            
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div class="sm:col-span-2">
+                                    <label class="block text-xs font-bold text-slate-300 mb-1">Tournament Name *</label>
+                                    <input type="text" id="t-name" required placeholder="e.g. Western Province Softball T10 Trophy 2026" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-500">
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-300 mb-1">Tournament Type</label>
+                                    <select id="t-type" onchange="toggleGroupConfig(this.value)" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-500">
+                                        <option value="League">League Format (Points Table)</option>
+                                        <option value="Knockout">Knockout Cup</option>
+                                        <option value="Custom">Custom League + Knockout</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-300 mb-1">Venue Name *</label>
+                                    <input type="text" id="t-venue" required placeholder="e.g. Sugathadasa Outdoor Stadium" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-500">
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-300 mb-1">Start Date</label>
+                                    <input type="date" id="t-start" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none">
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-300 mb-1">End Date</label>
+                                    <input type="date" id="t-end" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Match Rules & Format Settings -->
+                        <div class="bg-dark-900 border border-slate-800 rounded-2xl p-6 space-y-4">
+                            <h2 class="text-base font-bold text-brand-400 uppercase tracking-wider">2. Match Rules & Group Setup</h2>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-300 mb-1">Number of Groups</label>
+                                    <select id="t-groups" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white">
+                                        <option value="1">1 Single Group</option>
+                                        <option value="2">2 Groups (Group A, Group B)</option>
+                                        <option value="3" selected>3 Groups (Group A, Group B, Group C)</option>
+                                        <option value="4">4 Groups</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-300 mb-1">Overs Per Match</label>
+                                    <input type="number" id="t-overs" value="6" min="1" max="50" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white">
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-300 mb-1">Balls Per Over</label>
+                                    <input type="number" id="t-balls" value="6" min="4" max="8" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Graphics Design Pack Selection -->
+                        <div class="bg-dark-900 border border-slate-800 rounded-2xl p-6 space-y-4">
+                            <div class="flex items-center justify-between">
+                                <h2 class="text-base font-bold text-brand-400 uppercase tracking-wider">3. Select Graphics Design Pack</h2>
+                                <span class="text-xs text-slate-400">Determines OBS overlay visuals for all scenes</span>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="pack-selector-container">
+                                ${state.designPacks.map((pack, idx) => `
+                                    <div onclick="selectPackForWizard('${pack.id}')" id="pack-card-${pack.id}" class="pack-card border-2 ${idx === 0 ? 'border-brand-500 bg-brand-500/10' : 'border-slate-800 bg-slate-800/40'} rounded-2xl p-4 cursor-pointer hover:border-slate-600 transition space-y-3">
+                                        <img src="${pack.cover}" class="w-full h-28 object-cover rounded-xl border border-slate-700">
+                                        <div>
+                                            <h4 class="font-bold text-white text-sm">${pack.name}</h4>
+                                            <p class="text-[11px] text-slate-400 leading-tight mt-1">${pack.description}</p>
+                                        </div>
+                                        <div class="text-[10px] text-brand-400 font-bold uppercase flex items-center justify-between">
+                                            <span>Includes ${Object.keys(pack.scenes).length} Broadcast Scenes</span>
+                                            <i class="fa-solid fa-circle-check text-sm ${idx === 0 ? 'block' : 'hidden'}" id="check-${pack.id}"></i>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            <input type="hidden" id="selected-pack-id" value="${state.designPacks[0].id}">
+                        </div>
+
+                        <!-- Submit Button -->
+                        <button type="submit" class="w-full bg-brand-500 hover:bg-brand-600 text-dark-950 font-extrabold text-base py-4 rounded-2xl shadow-xl shadow-brand-500/25 transition">
+                            Save Tournament & Generate Permanent OBS Link
+                        </button>
+                    </form>
+                </div>
+            `;
+        }
+
+        function selectPackForWizard(packId) {
+            document.querySelectorAll('.pack-card').forEach(el => {
+                el.classList.remove('border-brand-500', 'bg-brand-500/10');
+                el.classList.add('border-slate-800');
+            });
+            document.querySelectorAll('[id^="check-"]').forEach(el => el.classList.add('hidden'));
+
+            const selected = document.getElementById(`pack-card-${packId}`);
+            if (selected) {
+                selected.classList.remove('border-slate-800');
+                selected.classList.add('border-brand-500', 'bg-brand-500/10');
+            }
+            const check = document.getElementById(`check-${packId}`);
+            if (check) check.classList.remove('hidden');
+
+            document.getElementById('selected-pack-id').value = packId;
+        }
+
+        function handleCreateTournament(e) {
+            e.preventDefault();
+            const name = document.getElementById('t-name').value;
+            const type = document.getElementById('t-type').value;
+            const venue = document.getElementById('t-venue').value;
+            const startDate = document.getElementById('t-start').value;
+            const endDate = document.getElementById('t-end').value;
+            const groupsCount = parseInt(document.getElementById('t-groups').value);
+            const overs = parseInt(document.getElementById('t-overs').value);
+            const balls = parseInt(document.getElementById('t-balls').value);
+            const packId = document.getElementById('selected-pack-id').value;
+
+            const tourneyId = 'tourney-' + Date.now();
+            const obsUrl = `${window.location.origin}${window.location.pathname}?obs=${tourneyId}`;
+
+            const datesDisplay = startDate === endDate ? '1 Day' : 'Multiple Days';
+
+            const newTourney = {
+                id: tourneyId,
+                name: name,
+                logo: 'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?w=200&auto=format&fit=crop&q=60',
+                type: type,
+                startDate: startDate,
+                endDate: endDate,
+                datesDisplay: datesDisplay,
+                venue: venue,
+                description: 'Created via Tournament Wizard',
+                organiser: 'Softball Association',
+                numberOfTeams: 0,
+                numberOfGroups: groupsCount,
+                oversPerMatch: overs,
+                ballsPerOver: balls,
+                numberOfWickets: 10,
+                selected_design_set_id: packId,
+                obsLink: obsUrl,
+                status: 'Upcoming',
+                activeSceneKey: 'welcome',
+                createdAt: new Date().toISOString()
+            };
+
+            state.tournaments.push(newTourney);
+            state.activeTournamentId = tourneyId;
+            saveStore();
+
+            showToast('Tournament Created! Permanent OBS Link generated.', 'success');
+            navigate('dashboard');
+        }
+
+        // ==========================================
+        // MODULE 5 - 8: TEAMS, PLAYERS, MATCHES & TOSS
+        // ==========================================
+
+        function renderTeamsView() {
+            const tourney = getActiveTournament();
+            const teams = state.teams.filter(t => t.tournamentId === tourney.id);
+
+            return `
+                <div class="max-w-7xl mx-auto px-4 py-8 w-full space-y-6 animate-slide-in">
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+                        <div>
+                            <h1 class="text-2xl font-black text-white">Teams & Player Squads</h1>
+                            <p class="text-xs text-slate-400">Managing teams for <span class="text-brand-400 font-bold">${tourney.name}</span></p>
+                        </div>
+                        
+                        <div class="flex space-x-2">
+                            <button onclick="openAddTeamModal()" class="bg-brand-500 hover:bg-brand-600 text-dark-950 font-bold text-xs py-2.5 px-4 rounded-xl shadow-lg transition flex items-center space-x-1">
+                                <i class="fa-solid fa-plus"></i>
+                                <span>Add New Team</span>
+                            </button>
+                            <button onclick="openAddPlayerModal()" class="bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs py-2.5 px-4 rounded-xl border border-slate-700 transition flex items-center space-x-1">
+                                <i class="fa-solid fa-user-plus text-brand-400"></i>
+                                <span>Add Player</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Teams List -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        ${teams.map((t, idx) => {
+                            const players = state.players.filter(p => p.teamId === t.id);
+                            return `
+                                <div class="bg-dark-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center space-x-3">
+                                            <span class="text-slate-500 font-bold text-xs">#${idx + 1}</span>
+                                            <img src="${t.logo}" class="w-10 h-10 rounded-xl object-cover border border-slate-700">
+                                            <div>
+                                                <h3 class="font-bold text-white text-base leading-tight">${t.fullName}</h3>
+                                                <span class="text-[10px] text-brand-400 font-bold">${t.shortName} • ${t.group}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="text-xs text-slate-400 bg-slate-800/50 p-2.5 rounded-xl space-y-1">
+                                        <div class="flex justify-between"><span>Captain:</span> <span class="font-bold text-white">${t.captain || 'Not Set'}</span></div>
+                                        <div class="flex justify-between"><span>Registered Players:</span> <span class="font-bold text-brand-400">${players.length} Players</span></div>
+                                    </div>
+
+                                    <div class="space-y-1">
+                                        <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Squad Members</div>
+                                        <div class="max-h-40 overflow-y-auto space-y-1 pr-1">
+                                            ${players.map(p => `
+                                                <div class="flex items-center justify-between text-xs bg-slate-800/30 px-2.5 py-1.5 rounded-lg">
+                                                    <span class="text-slate-200">${p.jerseyNumber ? '#' + p.jerseyNumber : ''} ${p.fullName}</span>
+                                                    <span class="text-[10px] text-slate-400 font-medium">${p.role}</span>
+                                                </div>
+                                            `).join('') || '<div class="text-xs text-slate-500 italic">No players added yet</div>'}
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function openAddTeamModal() {
+            const tourney = getActiveTournament();
+            openModal(`
+                <h3 class="text-lg font-bold text-white mb-4">Add New Team</h3>
+                <form onsubmit="handleAddTeam(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-300 mb-1">Team Full Name</label>
+                        <input type="text" id="tm-fullname" oninput="autoGenerateShortName(this.value)" required placeholder="e.g. Kalutara Power Hitters" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-300 mb-1">Short Name / Code</label>
+                            <input type="text" id="tm-shortname" maxlength="4" required placeholder="KPH" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white uppercase">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-300 mb-1">Assigned Group</label>
+                            <select id="tm-group" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white">
+                                <option value="Group A">Group A</option>
+                                <option value="Group B">Group B</option>
+                                <option value="Group C">Group C</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-300 mb-1">Captain Name</label>
+                        <input type="text" id="tm-captain" placeholder="e.g. Angelo Mathews" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white">
+                    </div>
+
+                    <div class="flex justify-end space-x-2 pt-2">
+                        <button type="button" onclick="closeModal()" class="px-4 py-2 rounded-xl bg-slate-800 text-xs text-slate-300">Cancel</button>
+                        <button type="submit" class="px-4 py-2 rounded-xl bg-brand-500 text-dark-950 font-bold text-xs">Save Team</button>
+                    </div>
+                </form>
+            `);
+        }
+
+        function autoGenerateShortName(val) {
+            const words = val.trim().split(' ');
+            if (words.length >= 2) {
+                const code = words.map(w => w[0]).join('').toUpperCase().slice(0, 4);
+                document.getElementById('tm-shortname').value = code;
+            }
+        }
+
+        function handleAddTeam(e) {
+            e.preventDefault();
+            const tourney = getActiveTournament();
+            const fullName = document.getElementById('tm-fullname').value;
+            const shortName = document.getElementById('tm-shortname').value;
+            const group = document.getElementById('tm-group').value;
+            const captain = document.getElementById('tm-captain').value;
+
+            const newTeam = {
+                id: 'team-' + Date.now(),
+                tournamentId: tourney.id,
+                fullName: fullName,
+                shortName: shortName,
+                group: group,
+                captain: captain,
+                logo: 'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?w=100&auto=format&fit=crop&q=60'
+            };
+
+            state.teams.push(newTeam);
+            saveStore();
+            closeModal();
+            showToast('Team added successfully', 'success');
+            renderCurrentRoute();
+        }
+
+        function openAddPlayerModal() {
+            const tourney = getActiveTournament();
+            const teams = state.teams.filter(t => t.tournamentId === tourney.id);
+
+            openModal(`
+                <h3 class="text-lg font-bold text-white mb-4">Add Player Profile</h3>
+                <form onsubmit="handleAddPlayer(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-300 mb-1">Select Team</label>
+                        <select id="pl-team" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white">
+                            ${teams.map(t => `<option value="${t.id}">${t.fullName} (${t.shortName})</option>`).join('')}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-300 mb-1">Full Name</label>
+                        <input type="text" id="pl-fullname" required placeholder="e.g. Dasun Shanaka" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-300 mb-1">Jersey Number</label>
+                            <input type="text" id="pl-jersey" placeholder="7" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-300 mb-1">Playing Role</label>
+                            <select id="pl-role" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white">
+                                <option value="Batsman">Batsman</option>
+                                <option value="Bowler">Bowler</option>
+                                <option value="All-Rounder">All-Rounder</option>
+                                <option value="Wicketkeeper">Wicketkeeper</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end space-x-2 pt-2">
+                        <button type="button" onclick="closeModal()" class="px-4 py-2 rounded-xl bg-slate-800 text-xs text-slate-300">Cancel</button>
+                        <button type="submit" class="px-4 py-2 rounded-xl bg-brand-500 text-dark-950 font-bold text-xs">Save Player</button>
+                    </div>
+                </form>
+            `);
+        }
+
+        function handleAddPlayer(e) {
+            e.preventDefault();
+            const teamId = document.getElementById('pl-team').value;
+            const fullName = document.getElementById('pl-fullname').value;
+            const jersey = document.getElementById('pl-jersey').value;
+            const role = document.getElementById('pl-role').value;
+
+            const newPlayer = {
+                id: 'p-' + Date.now(),
+                teamId: teamId,
+                fullName: fullName,
+                jerseyNumber: jersey,
+                role: role,
+                battingStyle: 'Right Hand',
+                bowlingStyle: 'Right-arm Medium',
+                photo: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=60'
+            };
+
+            state.players.push(newPlayer);
+            saveStore();
+            closeModal();
+            showToast('Player profile created', 'success');
+            renderCurrentRoute();
+        }
+
+        // ==========================================
+        // MODULE 9 & 10: MOBILE LIVE SCORING ENGINE & UNDO
+        // ==========================================
+
+        function renderLiveScoringView() {
+            const match = getActiveMatch();
+            if (!match) {
+                return `<div class="p-8 text-center text-slate-400">No active match found for this tournament. Please schedule or create a match first.</div>`;
+            }
+
+            const teamA = state.teams.find(t => t.id === match.teamAId) || { fullName: 'Team A', shortName: 'TMA' };
+            const teamB = state.teams.find(t => t.id === match.teamBId) || { fullName: 'Team B', shortName: 'TMB' };
+            const striker = state.players.find(p => p.id === match.strikerId) || { fullName: 'Striker' };
+            const nonStriker = state.players.find(p => p.id === match.nonStrikerId) || { fullName: 'Non-Striker' };
+            const bowler = state.players.find(p => p.id === match.currentBowlerId) || { fullName: 'Bowler' };
+
+            const strikerSR = match.strikerStats.balls > 0 ? ((match.strikerStats.runs / match.strikerStats.balls) * 100).toFixed(1) : '0.0';
+            const bowlerEco = match.bowlerStats.overs > 0 ? (match.bowlerStats.runs / match.bowlerStats.overs).toFixed(1) : '0.0';
+
+            return `
+                <div class="max-w-4xl mx-auto px-4 py-6 w-full space-y-5 animate-slide-in">
+                    <!-- Match Score Header Card -->
+                    <div class="bg-gradient-to-r from-dark-900 via-slate-900 to-dark-900 border border-slate-800 rounded-3xl p-5 shadow-2xl relative overflow-hidden">
+                        <div class="flex items-center justify-between text-xs text-slate-400 mb-3 pb-2 border-b border-slate-800">
+                            <span class="font-bold text-brand-400 uppercase tracking-widest">${match.matchType} • OVER LIMIT: ${match.overs} OV</span>
+                            <span class="flex items-center space-x-1">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                                <span class="text-emerald-400 font-bold uppercase">LIVE SCORING</span>
+                            </span>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4 items-center">
+                            <!-- Batting Team Score -->
+                            <div class="space-y-1">
+                                <div class="text-xs text-slate-400 font-bold">${teamA.fullName} (Batting)</div>
+                                <div class="text-4xl sm:text-5xl font-black text-white tracking-tight">
+                                    ${match.teamAScore}<span class="text-brand-400">/${match.teamAWickets}</span>
+                                </div>
+                                <div class="text-xs font-semibold text-slate-400">
+                                    Overs: <span class="text-white font-bold">${match.teamAOvers}</span> / ${match.overs}.0
+                                </div>
+                            </div>
+
+                            <!-- Bowling Team Info -->
+                            <div class="text-right space-y-1">
+                                <div class="text-xs text-slate-400 font-bold">${teamB.fullName} (Bowling)</div>
+                                <div class="text-sm font-bold text-slate-300">Toss: ${match.tossDecision || 'BAT FIRST'}</div>
+                                <div class="text-xs text-brand-400 font-semibold">CRR: ${match.teamAOvers > 0 ? (match.teamAScore / match.teamAOvers).toFixed(2) : '0.00'}</div>
+                            </div>
+                        </div>
+
+                        <!-- Current Over Balls Strip -->
+                        <div class="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between">
+                            <span class="text-xs text-slate-400 font-bold">THIS OVER:</span>
+                            <div class="flex space-x-1.5 overflow-x-auto">
+                                ${match.currentOverBalls.map(b => `
+                                    <span class="w-8 h-8 rounded-full ${b === 'W' ? 'bg-red-600 text-white font-black' : b >= 4 ? 'bg-brand-500 text-dark-950 font-black' : 'bg-slate-800 text-slate-200'} flex items-center justify-center text-xs shadow-md">
+                                        ${b}
+                                    </span>
+                                `).join('') || '<span class="text-xs text-slate-500 italic">No balls yet</span>'}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Batsmen & Bowler Live Stats Cards -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <!-- Batting Status -->
+                        <div class="bg-dark-900 border border-slate-800 rounded-2xl p-4 space-y-3">
+                            <div class="text-xs font-bold text-slate-400 uppercase tracking-wider flex justify-between">
+                                <span>Batting</span>
+                                <button onclick="swapStrike()" class="text-brand-400 hover:text-brand-300 text-[10px]">Swap Strike ⇄</button>
+                            </div>
+
+                            <div class="space-y-2">
+                                <div class="bg-slate-800/60 p-2.5 rounded-xl border border-brand-500/30 flex justify-between items-center">
+                                    <div>
+                                        <div class="font-bold text-white text-sm flex items-center space-x-1">
+                                            <span>* ${striker.fullName}</span>
+                                        </div>
+                                        <div class="text-[10px] text-slate-400">4s: ${match.strikerStats.fours}  6s: ${match.strikerStats.sixes}  SR: ${strikerSR}</div>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="text-xl font-black text-brand-400">${match.strikerStats.runs}</span>
+                                        <span class="text-xs text-slate-400">(${match.strikerStats.balls})</span>
+                                    </div>
+                                </div>
+
+                                <div class="bg-slate-800/30 p-2.5 rounded-xl flex justify-between items-center">
+                                    <div>
+                                        <div class="font-medium text-slate-300 text-sm">${nonStriker.fullName}</div>
+                                        <div class="text-[10px] text-slate-400">4s: ${match.nonStrikerStats.fours}  6s: ${match.nonStrikerStats.sixes}</div>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="text-lg font-bold text-slate-200">${match.nonStrikerStats.runs}</span>
+                                        <span class="text-xs text-slate-400">(${match.nonStrikerStats.balls})</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Bowling Status -->
+                        <div class="bg-dark-900 border border-slate-800 rounded-2xl p-4 space-y-3">
+                            <div class="text-xs font-bold text-slate-400 uppercase tracking-wider">Current Bowler</div>
+
+                            <div class="bg-slate-800/60 p-2.5 rounded-xl border border-slate-700/50 space-y-2">
+                                <div class="flex justify-between items-center">
+                                    <div class="font-bold text-white text-sm">${bowler.fullName}</div>
+                                    <div class="text-xs font-bold text-brand-400">${match.bowlerStats.wickets} - ${match.bowlerStats.runs} (${match.bowlerStats.overs} ov)</div>
+                                </div>
+                                <div class="text-[10px] text-slate-400 flex justify-between">
+                                    <span>Economy: ${bowlerEco}</span>
+                                    <span>Maidens: ${match.bowlerStats.maidens || 0}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Fast Ball-by-Ball Scoring Controls Keypad -->
+                    <div class="bg-dark-900 border border-slate-800 rounded-3xl p-5 space-y-4 shadow-xl">
+                        <div class="text-xs font-bold text-slate-400 uppercase tracking-wider text-center">Record Ball Result</div>
+
+                        <!-- Run Buttons Grid -->
+                        <div class="grid grid-cols-4 gap-2.5">
+                            <button onclick="recordBall(0)" class="bg-slate-800 hover:bg-slate-700 text-white font-extrabold text-xl py-3 rounded-2xl border border-slate-700 shadow transition active:scale-95">0</button>
+                            <button onclick="recordBall(1)" class="bg-slate-800 hover:bg-slate-700 text-white font-extrabold text-xl py-3 rounded-2xl border border-slate-700 shadow transition active:scale-95">1</button>
+                            <button onclick="recordBall(2)" class="bg-slate-800 hover:bg-slate-700 text-white font-extrabold text-xl py-3 rounded-2xl border border-slate-700 shadow transition active:scale-95">2</button>
+                            <button onclick="recordBall(3)" class="bg-slate-800 hover:bg-slate-700 text-white font-extrabold text-xl py-3 rounded-2xl border border-slate-700 shadow transition active:scale-95">3</button>
+                            
+                            <button onclick="recordBall(4)" class="bg-brand-500/20 border border-brand-500 hover:bg-brand-500 hover:text-dark-950 text-brand-400 font-black text-2xl py-3 rounded-2xl shadow transition active:scale-95">4</button>
+                            <button onclick="recordBall(5)" class="bg-slate-800 hover:bg-slate-700 text-white font-extrabold text-xl py-3 rounded-2xl border border-slate-700 shadow transition active:scale-95">5</button>
+                            <button onclick="recordBall(6)" class="bg-brand-500 hover:bg-brand-600 text-dark-950 font-black text-2xl py-3 rounded-2xl shadow-lg shadow-brand-500/20 transition active:scale-95">6</button>
+                            <button onclick="recordBall(7)" class="bg-slate-800 hover:bg-slate-700 text-white font-extrabold text-xl py-3 rounded-2xl border border-slate-700 shadow transition active:scale-95">7</button>
+                        </div>
+
+                        <!-- Extras & Wicket Controls -->
+                        <div class="grid grid-cols-3 gap-2.5 pt-2">
+                            <button onclick="recordBall('WD')" class="bg-blue-900/40 border border-blue-700 text-blue-300 font-bold text-xs py-3 rounded-xl hover:bg-blue-800/50">Wide (1wd)</button>
+                            <button onclick="recordBall('NB')" class="bg-amber-900/40 border border-amber-700 text-amber-300 font-bold text-xs py-3 rounded-xl hover:bg-amber-800/50">No Ball (1nb)</button>
+                            <button onclick="openWicketModal()" class="bg-red-600 hover:bg-red-700 text-white font-black text-sm py-3 rounded-xl shadow-lg shadow-red-600/30">OUT (WICKET)</button>
+                        </div>
+
+                        <!-- Operational Controls (Undo, Over End, Trigger) -->
+                        <div class="flex items-center justify-between border-t border-slate-800/80 pt-3 text-xs">
+                            <button onclick="undoLastBall()" class="text-slate-400 hover:text-white flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-slate-800">
+                                <i class="fa-solid fa-rotate-left text-brand-400"></i>
+                                <span>Undo Ball</span>
+                            </button>
+
+                            <button onclick="triggerBroadcastGraphic('scoreboard')" class="text-brand-400 hover:text-brand-300 font-bold flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-brand-500/10 border border-brand-500/30">
+                                <i class="fa-solid fa-tv"></i>
+                                <span>Show Score on OBS</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function recordBall(runs) {
+            const match = getActiveMatch();
+            if (!match) return;
+
+            // Push State Backup to Undo History Stack
+            match.historyStack.push(JSON.parse(JSON.stringify(match)));
+
+            let runVal = 0;
+            let isLegal = true;
+
+            if (typeof runs === 'number') {
+                runVal = runs;
+                match.strikerStats.runs += runs;
+                match.strikerStats.balls += 1;
+                if (runs === 4) match.strikerStats.fours += 1;
+                if (runs === 6) match.strikerStats.sixes += 1;
+                
+                // Trigger auto overlays
+                if (runs === 4) triggerBroadcastGraphic('four');
+                if (runs === 6) triggerBroadcastGraphic('six');
+            } else if (runs === 'WD' || runs === 'NB') {
+                runVal = 1;
+                isLegal = false;
+            }
+
+            match.teamAScore += runVal;
+            match.bowlerStats.runs += runVal;
+            match.currentOverBalls.push(runs);
+
+            if (isLegal) {
+                // Increment Over balls counter
+                let currOvers = match.teamAOvers;
+                let full = Math.floor(currOvers);
+                let ballNum = Math.round((currOvers - full) * 10);
+                ballNum += 1;
+
+                if (ballNum >= 6) {
+                    match.teamAOvers = full + 1;
+                    match.bowlerStats.overs = Math.floor(match.bowlerStats.overs) + 1;
+                    match.currentOverBalls = [];
+                    // Auto Swap Strike on over end
+                    const temp = match.strikerId;
+                    match.strikerId = match.nonStrikerId;
+                    match.nonStrikerId = temp;
+                    showToast('End of Over! Strikes Swapped.', 'info');
+                } else {
+                    match.teamAOvers = parseFloat((full + ballNum * 0.1).toFixed(1));
+                    match.bowlerStats.overs = parseFloat((Math.floor(match.bowlerStats.overs) + ballNum * 0.1).toFixed(1));
+                    
+                    // Odd run strike rotation
+                    if (runVal % 2 !== 0) {
+                        const temp = match.strikerId;
+                        match.strikerId = match.nonStrikerId;
+                        match.nonStrikerId = temp;
+                    }
+                }
+            }
+
+            saveStore();
+            renderCurrentRoute();
+        }
+
+        function openWicketModal() {
+            const match = getActiveMatch();
+            const striker = state.players.find(p => p.id === match.strikerId) || { fullName: 'Striker' };
+            const tourneyPlayers = state.players.filter(p => p.teamId === match.teamAId && p.id !== match.strikerId && p.id !== match.nonStrikerId);
+
+            openModal(`
+                <h3 class="text-lg font-black text-white mb-4 flex items-center space-x-2">
+                    <i class="fa-solid fa-triangle-exclamation text-red-500"></i>
+                    <span>Dismissal Details (Wicket)</span>
+                </h3>
+
+                <form onsubmit="handleWicketDismissal(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-300 mb-1">Dismissed Batter</label>
+                        <input type="text" disabled value="${striker.fullName}" class="w-full bg-slate-800 text-slate-400 font-bold border border-slate-700 rounded-xl px-4 py-2 text-sm">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-300 mb-1">Dismissal Type</label>
+                        <select id="wk-type" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white">
+                            <option value="Bowled">Bowled</option>
+                            <option value="Caught">Caught</option>
+                            <option value="LBW">LBW</option>
+                            <option value="Run Out">Run Out</option>
+                            <option value="Stumped">Stumped</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-300 mb-1">Next Incoming Batter</label>
+                        <select id="wk-next" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white">
+                            ${tourneyPlayers.map(p => `<option value="${p.id}">${p.fullName}</option>`).join('')}
+                        </select>
+                    </div>
+
+                    <div class="flex justify-end space-x-2 pt-2">
+                        <button type="button" onclick="closeModal()" class="px-4 py-2 rounded-xl bg-slate-800 text-xs text-slate-300">Cancel</button>
+                        <button type="submit" class="px-4 py-2 rounded-xl bg-red-600 text-white font-bold text-xs">Confirm Wicket</button>
+                    </div>
+                </form>
+            `);
+        }
+
+        function handleWicketDismissal(e) {
+            e.preventDefault();
+            const match = getActiveMatch();
+            const nextBatterId = document.getElementById('wk-next').value;
+
+            match.historyStack.push(JSON.parse(JSON.stringify(match)));
+
+            match.teamAWickets += 1;
+            match.bowlerStats.wickets += 1;
+            match.currentOverBalls.push('W');
+
+            // Reset Striker to Next Batter
+            match.strikerId = nextBatterId;
+            match.strikerStats = { runs: 0, balls: 0, fours: 0, sixes: 0 };
+
+            saveStore();
+            closeModal();
+            triggerBroadcastGraphic('wicket');
+            showToast('Wicket recorded & graphics triggered!', 'error');
+            renderCurrentRoute();
+        }
+
+        function undoLastBall() {
+            const match = getActiveMatch();
+            if (!match || match.historyStack.length === 0) {
+                showToast('No actions available to undo', 'info');
+                return;
+            }
+
+            const previousState = match.historyStack.pop();
+            Object.assign(match, previousState);
+            saveStore();
+            showToast('Previous ball restored', 'success');
+            renderCurrentRoute();
+        }
+
+        function swapStrike() {
+            const match = getActiveMatch();
+            if (!match) return;
+            const temp = match.strikerId;
+            match.strikerId = match.nonStrikerId;
+            match.nonStrikerId = temp;
+            saveStore();
+            renderCurrentRoute();
+        }
+
+        // ==========================================
+        // MODULE 13 - 21: INTERACTIVE GRAPHICS STUDIO
+        // ==========================================
+
+        function renderGraphicsStudioView() {
+            const pack = state.designPacks.find(p => p.id === state.selectedDesignPackId) || state.designPacks[0];
+            const currentScene = pack.scenes[state.selectedSceneKey] || Object.values(pack.scenes)[0];
+
+            return `
+                <div class="flex-1 flex flex-col md:flex-row h-[calc(100vh-64px)] overflow-hidden bg-dark-950">
+                    <!-- LEFT PANEL: Packs & Layers -->
+                    <div class="w-full md:w-80 bg-dark-900 border-r border-slate-800 flex flex-col h-full overflow-y-auto">
+                        <div class="p-4 border-b border-slate-800">
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Active Design Pack</label>
+                            <select onchange="changeStudioPack(this.value)" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white font-bold">
+                                ${state.designPacks.map(p => `<option value="${p.id}" ${p.id === pack.id ? 'selected' : ''}>${p.name}</option>`).join('')}
+                            </select>
+                        </div>
+
+                        <!-- Scene Picker List -->
+                        <div class="p-4 space-y-2 border-b border-slate-800">
+                            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Pack Broadcast Scenes</div>
+                            <div class="space-y-1">
+                                ${Object.keys(pack.scenes).map(sKey => `
+                                    <button onclick="selectStudioScene('${sKey}')" class="w-full text-left px-3 py-2 rounded-xl text-xs flex items-center justify-between ${state.selectedSceneKey === sKey ? 'bg-brand-500 text-dark-950 font-bold' : 'text-slate-300 hover:bg-slate-800'}">
+                                        <span>${pack.scenes[sKey].name}</span>
+                                        <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                                    </button>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <!-- AI Design Prompt Assistant Simulation -->
+                        <div class="p-4 space-y-3 bg-slate-900/60 m-3 rounded-2xl border border-slate-800">
+                            <div class="text-xs font-bold text-brand-400 flex items-center space-x-1">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                                <span>AI Design Assistant</span>
+                            </div>
+                            <input type="text" id="ai-prompt-input" placeholder="e.g. Make scores bigger and cyan" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+                            <button onclick="runAIDesignPrompt()" class="w-full bg-slate-800 hover:bg-brand-500 hover:text-dark-950 text-xs font-bold py-2 rounded-xl border border-slate-700 transition">
+                                Apply AI Transformation
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- CENTER CANVAS AREA -->
+                    <div class="flex-1 flex flex-col bg-dark-950 checkerboard relative justify-center items-center p-8 overflow-auto">
+                        <!-- Canvas Control Toolbar -->
+                        <div class="absolute top-4 left-4 z-20 flex space-x-2 bg-dark-900/90 border border-slate-700 p-2 rounded-xl backdrop-blur-md">
+                            <button onclick="setZoom(-10)" class="text-xs text-slate-300 hover:text-white px-2 py-1"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
+                            <span class="text-xs font-bold text-brand-400 px-2 py-1">${state.studioCanvasZoom}%</span>
+                            <button onclick="setZoom(10)" class="text-xs text-slate-300 hover:text-white px-2 py-1"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
+                        </div>
+
+                        <!-- 1920x1080 Simulated Canvas Box -->
+                        <div id="studio-canvas" class="relative bg-dark-900/80 shadow-2xl border border-slate-700/80 overflow-hidden transition-transform duration-200" 
+                             style="width: 960px; height: 540px; transform: scale(${state.studioCanvasZoom / 100});">
+                            
+                            <!-- Render Current Scene Layers -->
+                            ${renderSceneLayersToCanvas(currentScene)}
+                        </div>
+                    </div>
+
+                    <!-- RIGHT PANEL: Properties Inspector -->
+                    <div class="w-full md:w-80 bg-dark-900 border-l border-slate-800 p-4 space-y-4 overflow-y-auto">
+                        <div class="text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-slate-800 pb-2">Properties Inspector</div>
+                        
+                        ${renderLayerPropertiesInspector(currentScene)}
+
+                        <!-- Save & Publish Controls -->
+                        <div class="pt-4 border-t border-slate-800 space-y-2">
+                            <button onclick="saveStudioChanges()" class="w-full bg-brand-500 hover:bg-brand-600 text-dark-950 font-bold text-xs py-3 rounded-xl transition">
+                                Save Scene Design
+                            </button>
+                            <button onclick="publishDesignPack()" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs py-2.5 rounded-xl border border-slate-700 transition">
+                                Publish Pack Changes
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderSceneLayersToCanvas(scene) {
+            if (!scene || !scene.layers) return '';
+
+            const tourney = getActiveTournament();
+            const match = getActiveMatch();
+
+            // Mock Data Binding Resolver
+            const resolveField = (text) => {
+                if (!text) return '';
+                return text
+                    .replace('{{TOURNAMENT_NAME}}', tourney ? tourney.name : 'SRI LANKA TOURNAMENT')
+                    .replace('{{VENUE}}', tourney ? tourney.venue : 'COLOMBO')
+                    .replace('{{TEAM_A_NAME}}', 'COLOMBO KINGS')
+                    .replace('{{TEAM_A_SCORE}}', match ? match.teamAScore : '142')
+                    .replace('{{TEAM_A_WICKETS}}', match ? match.teamAWickets : '4')
+                    .replace('{{TEAM_A_OVERS}}', match ? match.teamAOvers : '5.2')
+                    .replace('{{TEAM_B_NAME}}', 'KANDY WARRIORS')
+                    .replace('{{STRIKER_NAME}}', 'D. CHANDIMAL')
+                    .replace('{{STRIKER_RUNS}}', '38')
+                    .replace('{{STRIKER_BALLS}}', '18')
+                    .replace('{{NON_STRIKER_NAME}}', 'K. PERERA')
+                    .replace('{{NON_STRIKER_RUNS}}', '22')
+                    .replace('{{NON_STRIKER_BALLS}}', '12')
+                    .replace('{{BOWLER_NAME}}', 'W. HASARANGA')
+                    .replace('{{BOWLER_WICKETS}}', '2')
+                    .replace('{{BOWLER_RUNS}}', '18')
+                    .replace('{{BOWLER_OVERS}}', '1.4');
+            };
+
+            return scene.layers.map(layer => {
+                // Scale factor for 960x540 viewport (1920x1080 -> 0.5)
+                const sx = (layer.x || 0) * 0.5;
+                const sy = (layer.y || 0) * 0.5;
+
+                if (layer.type === 'bg') {
+                    return `<div class="absolute inset-0 pointer-events-none" style="background-color: ${layer.color}; opacity: ${layer.opacity};"></div>`;
+                }
+                if (layer.type === 'shape') {
+                    const sw = (layer.w || 100) * 0.5;
+                    const sh = (layer.h || 50) * 0.5;
+                    return `<div class="absolute border border-slate-600/30" style="left: ${sx}px; top: ${sy}px; width: ${sw}px; height: ${sh}px; background-color: ${layer.color}; border-radius: ${layer.radius || 0}px;"></div>`;
+                }
+                if (layer.type === 'text') {
+                    const sf = (layer.fontSize || 24) * 0.5;
+                    const resolved = resolveField(layer.text);
+                    return `
+                        <div onclick="selectStudioLayer('${layer.id}')" class="absolute cursor-pointer hover:outline hover:outline-brand-500 hover:outline-2 px-1 rounded" style="left: ${sx}px; top: ${sy}px; font-size: ${sf}px; color: ${layer.color}; font-weight: ${layer.fontWeight || 'normal'}; font-family: Outfit, sans-serif;">
+                            ${resolved}
+                        </div>
+                    `;
+                }
+                return '';
+            }).join('');
+        }
+
+        function renderLayerPropertiesInspector(scene) {
+            if (!state.selectedLayerId) {
+                return `<div class="text-xs text-slate-500 italic">Click any text layer on canvas to inspect & edit properties.</div>`;
+            }
+
+            const layer = scene.layers.find(l => l.id === state.selectedLayerId);
+            if (!layer) return '';
+
+            return `
+                <div class="space-y-3 text-xs">
+                    <div>
+                        <label class="block text-slate-400 font-bold mb-1">Layer ID</label>
+                        <input type="text" disabled value="${layer.id}" class="w-full b
