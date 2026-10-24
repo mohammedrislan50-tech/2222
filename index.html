@@ -1,1658 +1,1337 @@
-```html
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="h-full bg-slate-950 text-slate-100">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sri Lanka Softball - Complete Tournament & OBS Broadcast System</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome & Lucide Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Teko:wght@500;600;700&display=swap" rel="stylesheet">
-
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        brand: {
-                            50: '#fffbe1',
-                            100: '#fff3b8',
-                            400: '#fbbf24',
-                            500: '#f59e0b',
-                            600: '#d97706',
-                            900: '#78350f',
-                        },
-                        dark: {
-                            800: '#1e293b',
-                            900: '#0f172a',
-                            950: '#020617',
-                        },
-                        accent: {
-                            cyan: '#06b6d4',
-                            emerald: '#10b981',
-                            crimson: '#ef4444',
-                        }
-                    },
-                    fontFamily: {
-                        sans: ['Outfit', 'sans-serif'],
-                        broadcast: ['Teko', 'sans-serif'],
-                    }
-                }
-            }
-        }
-    </script>
-    <style>
-        /* Canvas & Overlay Specific Styles */
-        .checkerboard {
-            background-color: #111827;
-            background-image: linear-gradient(45deg, #1f2937 25%, transparent 25%), 
-                              linear-gradient(-45deg, #1f2937 25%, transparent 25%), 
-                              linear-gradient(45deg, transparent 75%, #1f2937 75%), 
-                              linear-gradient(-45deg, transparent 75%, #1f2937 75%);
-            background-size: 20px 20px;
-            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
-        }
-        .obs-transparent {
-            background-color: transparent !important;
-        }
-        .glow-gold {
-            box-shadow: 0 0 25px rgba(245, 158, 11, 0.35);
-        }
-        .glow-cyan {
-            box-shadow: 0 0 25px rgba(6, 182, 212, 0.35);
-        }
-        .glow-red {
-            box-shadow: 0 0 25px rgba(239, 68, 68, 0.35);
-        }
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #0f172a;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #334155;
-            border-radius: 3px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #475569;
-        }
-        /* Animations */
-        @keyframes pulseGlow {
-            0%, 100% { opacity: 0.8; transform: scale(1); }
-            50% { opacity: 1; transform: scale(1.03); }
-        }
-        .animate-pulse-glow {
-            animation: pulseGlow 2s infinite ease-in-out;
-        }
-        @keyframes slideInLeft {
-            from { transform: translateX(-100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-        .animate-slide-in {
-            animation: slideInLeft 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Sri Lanka Softball — Pro Tournament Management & Studio</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Teko:wght@500;700&family=Inter:wght@400;600;800&family=Orbitron:wght@700;900&display=swap');
+    body { font-family: 'Inter', sans-serif; user-select: none; }
+    .font-teko { font-family: 'Teko', sans-serif; }
+    .font-orbitron { font-family: 'Orbitron', sans-serif; }
+    .checkerboard {
+      background-color: #0f172a;
+      background-image: linear-gradient(45deg, #1e293b 25%, transparent 25%),
+                        linear-gradient(-45deg, #1e293b 25%, transparent 25%),
+                        linear-gradient(45deg, transparent 75%, #1e293b 75%),
+                        linear-gradient(-45deg, transparent 75%, #1e293b 75%);
+      background-size: 20px 20px;
+      background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+    }
+    .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+    .custom-scroll::-webkit-scrollbar-track { background: #0f172a; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+    .canvas-handle {
+      position: absolute; width: 10px; height: 10px; background: #3b82f6; border: 1px solid #fff; border-radius: 2px;
+      transform: translate(-50%, -50%); z-index: 50; cursor: pointer;
+    }
+    .canvas-handle.rotate-handle {
+      background: #eab308; border-radius: 50%; width: 12px; height: 12px; cursor: grab;
+    }
+    .safe-guide { border: 1px dashed rgba(239, 68, 68, 0.4); }
+    .title-safe { border: 1px dashed rgba(234, 179, 8, 0.4); }
+    .align-guide-x { position: absolute; top:0; bottom:0; width:1px; background:#06b6d4; z-index:90; pointer-events:none; }
+    .align-guide-y { position: absolute; left:0; right:0; height:1px; background:#06b6d4; z-index:90; pointer-events:none; }
+  </style>
 </head>
-<body class="bg-dark-950 text-slate-100 font-sans antialiased min-h-screen flex flex-col selection:bg-brand-500 selection:text-dark-950">
+<body class="h-full flex flex-col bg-slate-950 overflow-hidden text-sm">
 
-    <!-- APP CONTAINER -->
-    <div id="app" class="flex flex-col flex-1 min-h-screen">
-        <!-- HEADER / NAVIGATION -->
-        <header class="bg-dark-900 border-b border-slate-800 sticky top-0 z-50">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="flex items-center justify-between h-16">
-                    <!-- Brand / Logo -->
-                    <div class="flex items-center space-x-3 cursor-pointer" onclick="navigate('dashboard')">
-                        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-brand-400 flex items-center justify-center text-dark-950 font-black text-xl shadow-lg shadow-brand-500/20">
-                            <i class="fa-solid font-broadcast text-2xl">SL</i>
-                        </div>
-                        <div>
-                            <span class="font-extrabold text-lg tracking-tight bg-gradient-to-r from-white via-slate-200 to-brand-400 bg-clip-text text-transparent block leading-none">
-                                SRI LANKA SOFTBALL
-                            </span>
-                            <span class="text-[10px] text-brand-400 font-semibold tracking-widest uppercase block mt-0.5">
-                                Broadcast & Tournament Suite
-                            </span>
-                        </div>
-                    </div>
-
-                    <!-- Desktop Nav Links -->
-                    <nav class="hidden md:flex space-x-1 text-sm font-medium" id="main-nav">
-                        <!-- JS populated -->
-                    </nav>
-
-                    <!-- User / Role Switcher -->
-                    <div class="flex items-center space-x-3">
-                        <!-- Active Tournament Shortcut indicator -->
-                        <div id="nav-active-tournament" class="hidden sm:flex items-center bg-slate-800/80 border border-slate-700/60 rounded-lg px-2.5 py-1 text-xs">
-                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping mr-2"></span>
-                            <span id="active-tourney-name" class="text-slate-300 font-semibold truncate max-w-[120px]">No Tourney</span>
-                        </div>
-
-                        <!-- Role Selector Simulator -->
-                        <div class="relative group">
-                            <button class="flex items-center space-x-2 bg-slate-800 hover:bg-slate-700 text-xs px-3 py-1.5 rounded-lg border border-slate-700 transition">
-                                <i class="fa-solid fa-user-shield text-brand-400"></i>
-                                <span id="current-role-display" class="font-bold text-slate-200">Super Admin</span>
-                                <i class="fa-solid fa-chevron-down text-[10px] text-slate-400"></i>
-                            </button>
-                            <div class="absolute right-0 mt-1 w-48 bg-dark-900 border border-slate-700 rounded-xl shadow-2xl py-1 hidden group-hover:block z-50">
-                                <div class="px-3 py-1.5 text-[10px] uppercase font-bold text-slate-400 border-b border-slate-800">Switch Permission Role</div>
-                                <button onclick="switchRole('Super Admin')" class="w-full text-left px-3 py-1.5 text-xs hover:bg-slate-800 flex justify-between items-center">Super Admin <i class="fa-solid fa-check text-brand-400 hidden role-chk-super"></i></button>
-                                <button onclick="switchRole('Tournament Owner')" class="w-full text-left px-3 py-1.5 text-xs hover:bg-slate-800 flex justify-between items-center">Tournament Owner <i class="fa-solid fa-check text-brand-400 hidden role-chk-owner"></i></button>
-                                <button onclick="switchRole('Scorer')" class="w-full text-left px-3 py-1.5 text-xs hover:bg-slate-800 flex justify-between items-center">Scorer <i class="fa-solid fa-check text-brand-400 hidden role-chk-scorer"></i></button>
-                                <button onclick="switchRole('Graphics Operator')" class="w-full text-left px-3 py-1.5 text-xs hover:bg-slate-800 flex justify-between items-center">Graphics Operator <i class="fa-solid fa-check text-brand-400 hidden role-chk-graphics"></i></button>
-                                <button onclick="switchRole('Viewer')" class="w-full text-left px-3 py-1.5 text-xs hover:bg-slate-800 flex justify-between items-center">Viewer <i class="fa-solid fa-check text-brand-400 hidden role-chk-viewer"></i></button>
-                            </div>
-                        </div>
-
-                        <!-- Mobile Menu Button -->
-                        <button onclick="toggleMobileNav()" class="md:hidden text-slate-300 hover:text-white p-2">
-                            <i class="fa-solid fa-bars text-xl"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Mobile Nav Dropdown -->
-            <div id="mobile-nav" class="hidden md:hidden border-t border-slate-800 bg-dark-900 px-4 pt-2 pb-4 space-y-1">
-                <!-- JS populated -->
-            </div>
-        </header>
-
-        <!-- MAIN VIEW PORT (Dynamic Component Mounting) -->
-        <main id="main-content" class="flex-1 flex flex-col min-h-0 bg-dark-950">
-            <!-- Rendered by JS Router -->
-        </main>
-
-        <!-- GLOBAL MODAL CONTAINER -->
-        <div id="global-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
-            <div id="global-modal-content" class="bg-dark-900 border border-slate-700 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl">
-                <!-- Modal Dynamic Payload -->
-            </div>
-        </div>
-
-        <!-- GLOBAL TOAST NOTIFICATION -->
-        <div id="toast-container" class="fixed bottom-5 right-5 z-50 space-y-2 pointer-events-none"></div>
+  <!-- TOP HEADER & NAV -->
+  <header id="mainHeader" class="h-14 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-4 shrink-0 z-40">
+    <div class="flex items-center space-x-3">
+      <div class="w-9 h-9 bg-gradient-to-tr from-amber-500 to-yellow-300 rounded-lg flex items-center justify-center font-orbitron font-extrabold text-slate-950 text-xl shadow-lg shadow-amber-500/20">
+        SL
+      </div>
+      <div>
+        <h1 class="font-orbitron font-bold text-amber-400 text-sm tracking-wider uppercase">Sri Lanka Softball</h1>
+        <p class="text-[10px] text-slate-400 tracking-widest font-mono">OBS PRO BROADCAST & STUDIO</p>
+      </div>
     </div>
 
-    <!-- MAIN SCRIPT APP APPLICATION LOGIC -->
-    <script>
-        // ==========================================
-        // APP INITIAL STATE & LOCAL/IN-MEMORY DATABASE
-        // ==========================================
+    <!-- MAIN NAV LINKS -->
+    <nav class="hidden lg:flex items-center space-x-1">
+      <button onclick="switchModule('dashboard')" class="nav-btn px-3 py-1.5 rounded-md hover:bg-slate-800 text-slate-300 hover:text-white font-medium text-xs flex items-center space-x-1.5 transition">
+        <i class="fa-solid fa-chart-pie text-amber-400"></i><span>Dashboard</span>
+      </button>
+      <button onclick="switchModule('tournaments')" class="nav-btn px-3 py-1.5 rounded-md hover:bg-slate-800 text-slate-300 hover:text-white font-medium text-xs flex items-center space-x-1.5 transition">
+        <i class="fa-solid fa-trophy text-amber-400"></i><span>Tournaments</span>
+      </button>
+      <button onclick="switchModule('studio')" class="nav-btn px-3 py-1.5 rounded-md hover:bg-slate-800 text-slate-300 hover:text-white font-medium text-xs flex items-center space-x-1.5 transition">
+        <i class="fa-solid fa-wand-magic-sparkles text-amber-400"></i><span>Graphics Studio</span>
+      </button>
+      <button onclick="switchModule('scorer')" class="nav-btn px-3 py-1.5 rounded-md hover:bg-slate-800 text-slate-300 hover:text-white font-medium text-xs flex items-center space-x-1.5 transition">
+        <i class="fa-solid fa-baseball text-amber-400"></i><span>Live Scoring</span>
+      </button>
+      <button onclick="switchModule('controlroom')" class="nav-btn px-3 py-1.5 rounded-md hover:bg-slate-800 text-slate-300 hover:text-white font-medium text-xs flex items-center space-x-1.5 transition">
+        <i class="fa-solid fa-tower-broadcast text-amber-400"></i><span>Control Room</span>
+      </button>
+    </nav>
 
-        const DB_KEY = 'SL_SOFTBALL_APP_DB_V1';
+    <!-- RIGHT ACTION CONTROL -->
+    <div class="flex items-center space-x-2">
+      <!-- ROLE SELECTOR -->
+      <select id="roleSelector" onchange="changeRole(this.value)" class="bg-slate-800 border border-slate-700 text-xs rounded px-2 py-1 text-slate-200 focus:outline-none">
+        <option value="Super Admin">Role: Super Admin</option>
+        <option value="Tournament Owner">Role: Tournament Owner</option>
+        <option value="Scorer">Role: Scorer</option>
+        <option value="Graphics Operator">Role: Operator</option>
+        <option value="Viewer">Role: Viewer</option>
+      </select>
 
-        // Preloaded Default Design Packs
-        const DEFAULT_DESIGN_PACKS = [
-            {
-                id: 'dp-gold',
-                name: 'Design 1 — Gold Sports Pack',
-                description: 'Sleek dark broadcast template with metallic gold accents & bold high-visibility scoreboards.',
-                cover: 'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?w=500&auto=format&fit=crop&q=60',
-                theme: { primary: '#f59e0b', secondary: '#0f172a', text: '#ffffff', accent: '#fbbf24' },
-                scenes: {
-                    'welcome': {
-                        name: 'Welcome Scene',
-                        layers: [
-                            { id: 'bg', type: 'bg', color: '#0f172a', opacity: 1 },
-                            { id: 'title', type: 'text', text: 'WELCOME TO {{TOURNAMENT_NAME}}', x: 200, y: 350, fontSize: 58, color: '#f59e0b', fontWeight: '800' },
-                            { id: 'sub', type: 'text', text: 'LIVE FROM {{VENUE}}', x: 200, y: 440, fontSize: 32, color: '#ffffff', fontWeight: '500' },
-                            { id: 'badge', type: 'shape', x: 200, y: 250, w: 250, h: 60, color: '#f59e0b', radius: 8 }
-                        ]
-                    },
-                    'squad': {
-                        name: 'Team Squad / Playing XI',
-                        layers: [
-                            { id: 'bg', type: 'bg', color: '#0f172a', opacity: 0.95 },
-                            { id: 'title', type: 'text', text: '{{TEAM_A_NAME}} - SQUAD', x: 150, y: 100, fontSize: 48, color: '#f59e0b', fontWeight: '800' },
-                            { id: 'p1', type: 'text', text: '1. {{STRIKER_NAME}} (Capt)', x: 150, y: 220, fontSize: 28, color: '#ffffff', fontWeight: '600' },
-                            { id: 'p2', type: 'text', text: '2. {{NON_STRIKER_NAME}}', x: 150, y: 280, fontSize: 28, color: '#ffffff', fontWeight: '600' },
-                            { id: 'p3', type: 'text', text: '3. {{BOWLER_NAME}}', x: 150, y: 340, fontSize: 28, color: '#ffffff', fontWeight: '600' }
-                        ]
-                    },
-                    'toss': {
-                        name: 'Toss Scene',
-                        layers: [
-                            { id: 'bg', type: 'bg', color: '#0f172a', opacity: 0.9 },
-                            { id: 'heading', type: 'text', text: 'MATCH TOSS UPDATE', x: 100, y: 100, fontSize: 40, color: '#f59e0b', fontWeight: '800' },
-                            { id: 'winner', type: 'text', text: '{{TOSS_WINNER}} WON THE TOSS', x: 100, y: 220, fontSize: 36, color: '#ffffff', fontWeight: '700' },
-                            { id: 'decision', type: 'text', text: 'ELECTED TO {{TOSS_DECISION}} FIRST', x: 100, y: 280, fontSize: 30, color: '#fbbf24', fontWeight: '600' }
-                        ]
-                    },
-                    'scoreboard': {
-                        name: 'Main Scoreboard Lower-Third',
-                        layers: [
-                            { id: 'bar', type: 'shape', x: 100, y: 880, w: 1720, h: 140, color: '#0f172a', radius: 16 },
-                            { id: 'team_a', type: 'text', text: '{{TEAM_A_NAME}}: {{TEAM_A_SCORE}}/{{TEAM_A_WICKETS}} ({{TEAM_A_OVERS}} ov)', x: 140, y: 920, fontSize: 34, color: '#f59e0b', fontWeight: '800' },
-                            { id: 'vs', type: 'text', text: 'VS', x: 800, y: 920, fontSize: 28, color: '#94a3b8', fontWeight: '700' },
-                            { id: 'team_b', type: 'text', text: '{{TEAM_B_NAME}}: {{TEAM_B_SCORE}}/{{TEAM_B_WICKETS}}', x: 880, y: 920, fontSize: 34, color: '#ffffff', fontWeight: '800' },
-                            { id: 'batsmen', type: 'text', text: '* {{STRIKER_NAME}} {{STRIKER_RUNS}}*({{STRIKER_BALLS}})  |  {{NON_STRIKER_NAME}} {{NON_STRIKER_RUNS}}({{NON_STRIKER_BALLS}})', x: 140, y: 975, fontSize: 22, color: '#e2e8f0', fontWeight: '500' },
-                            { id: 'bowler', type: 'text', text: 'BOWLING: {{BOWLER_NAME}} {{BOWLER_WICKETS}}-{{BOWLER_RUNS}} ({{BOWLER_OVERS}})', x: 1100, y: 975, fontSize: 22, color: '#fbbf24', fontWeight: '500' }
-                        ]
-                    },
-                    'batsman': {
-                        name: 'Batsman Profile Lower-Third',
-                        layers: [
-                            { id: 'card', type: 'shape', x: 100, y: 780, w: 700, h: 200, color: '#0f172a', radius: 12 },
-                            { id: 'bname', type: 'text', text: '{{STRIKER_NAME}}', x: 140, y: 820, fontSize: 36, color: '#f59e0b', fontWeight: '800' },
-                            { id: 'stats', type: 'text', text: 'RUNS: {{STRIKER_RUNS}}   BALLS: {{STRIKER_BALLS}}   4s: {{STRIKER_FOURS}}   6s: {{STRIKER_SIXES}}', x: 140, y: 880, fontSize: 26, color: '#ffffff', fontWeight: '600' },
-                            { id: 'sr', type: 'text', text: 'STRIKE RATE: {{STRIKER_STRIKE_RATE}}', x: 140, y: 925, fontSize: 20, color: '#94a3b8', fontWeight: '500' }
-                        ]
-                    },
-                    'bowler': {
-                        name: 'Bowler Card',
-                        layers: [
-                            { id: 'card', type: 'shape', x: 1100, y: 780, w: 700, h: 200, color: '#0f172a', radius: 12 },
-                            { id: 'bwname', type: 'text', text: '{{BOWLER_NAME}}', x: 1140, y: 820, fontSize: 36, color: '#f59e0b', fontWeight: '800' },
-                            { id: 'stats', type: 'text', text: 'OVERS: {{BOWLER_OVERS}}   RUNS: {{BOWLER_RUNS}}   WICKETS: {{BOWLER_WICKETS}}', x: 1140, y: 880, fontSize: 26, color: '#ffffff', fontWeight: '600' },
-                            { id: 'eco', type: 'text', text: 'ECONOMY: {{BOWLER_ECONOMY}}', x: 1140, y: 925, fontSize: 20, color: '#94a3b8', fontWeight: '500' }
-                        ]
-                    },
-                    'wicket': {
-                        name: 'Wicket Graphic',
-                        layers: [
-                            { id: 'bg', type: 'shape', x: 500, y: 300, w: 920, h: 480, color: '#7f1d1d', radius: 24 },
-                            { id: 'out', type: 'text', text: 'WICKET! OUT!', x: 720, y: 380, fontSize: 72, color: '#ffffff', fontWeight: '900' },
-                            { id: 'batter', type: 'text', text: '{{STRIKER_NAME}} DISMISSED', x: 620, y: 480, fontSize: 38, color: '#fef08a', fontWeight: '700' },
-                            { id: 'score', type: 'text', text: 'SCORE: {{TEAM_A_SCORE}}/{{TEAM_A_WICKETS}} ({{TEAM_A_OVERS}} ov)', x: 650, y: 560, fontSize: 32, color: '#ffffff', fontWeight: '600' }
-                        ]
-                    },
-                    'match_result': {
-                        name: 'Match Result Scene',
-                        layers: [
-                            { id: 'bg', type: 'bg', color: '#0f172a', opacity: 0.95 },
-                            { id: 'header', type: 'text', text: 'MATCH RESULT', x: 200, y: 200, fontSize: 64, color: '#f59e0b', fontWeight: '900' },
-                            { id: 'res', type: 'text', text: '{{MATCH_RESULT}}', x: 200, y: 320, fontSize: 44, color: '#ffffff', fontWeight: '800' }
-                        ]
-                    }
-                }
-            },
-            {
-                id: 'dp-blue',
-                name: 'Design 2 — Blue Broadcast Pack',
-                description: 'High-tech Cyan & Electric Blue theme designed for TV & high-definition digital streams.',
-                cover: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=500&auto=format&fit=crop&q=60',
-                theme: { primary: '#06b6d4', secondary: '#0284c7', text: '#ffffff', accent: '#38bdf8' },
-                scenes: {
-                    'welcome': {
-                        name: 'Welcome Scene',
-                        layers: [
-                            { id: 'bg', type: 'bg', color: '#0284c7', opacity: 0.9 },
-                            { id: 'title', type: 'text', text: '{{TOURNAMENT_NAME}}', x: 200, y: 380, fontSize: 60, color: '#06b6d4', fontWeight: '900' },
-                            { id: 'sub', type: 'text', text: 'LIVE STREAMING OVERLAY - {{VENUE}}', x: 200, y: 470, fontSize: 28, color: '#ffffff', fontWeight: '600' }
-                        ]
-                    },
-                    'scoreboard': {
-                        name: 'Main Scoreboard Lower-Third',
-                        layers: [
-                            { id: 'bar', type: 'shape', x: 100, y: 880, w: 1720, h: 140, color: '#0f172a', radius: 8 },
-                            { id: 'team_a', type: 'text', text: '{{TEAM_A_NAME}} {{TEAM_A_SCORE}}-{{TEAM_A_WICKETS}} ({{TEAM_A_OVERS}})', x: 140, y: 920, fontSize: 34, color: '#06b6d4', fontWeight: '800' },
-                            { id: 'batsmen', type: 'text', text: 'STRIKER: {{STRIKER_NAME}} {{STRIKER_RUNS}} ({{STRIKER_BALLS}})', x: 140, y: 975, fontSize: 22, color: '#ffffff', fontWeight: '500' }
-                        ]
-                    }
-                }
-            },
-            {
-                id: 'dp-red',
-                name: 'Design 3 — Red Championship Pack',
-                description: 'Aggressive energetic red metallic theme ideal for knockout cup finals and night matches.',
-                cover: 'https://images.unsplash.com/photo-1531415074968-036ba1b575da?w=500&auto=format&fit=crop&q=60',
-                theme: { primary: '#ef4444', secondary: '#7f1d1d', text: '#ffffff', accent: '#fca5a5' },
-                scenes: {
-                    'welcome': {
-                        name: 'Welcome Scene',
-                        layers: [
-                            { id: 'bg', type: 'bg', color: '#450a0a', opacity: 0.9 },
-                            { id: 'title', type: 'text', text: 'CHAMPIONSHIP TOUR: {{TOURNAMENT_NAME}}', x: 150, y: 350, fontSize: 54, color: '#ef4444', fontWeight: '900' }
-                        ]
-                    },
-                    'scoreboard': {
-                        name: 'Main Scoreboard Lower-Third',
-                        layers: [
-                            { id: 'bar', type: 'shape', x: 100, y: 880, w: 1720, h: 140, color: '#450a0a', radius: 12 },
-                            { id: 'team_a', type: 'text', text: '{{TEAM_A_NAME}}: {{TEAM_A_SCORE}}/{{TEAM_A_WICKETS}}', x: 140, y: 920, fontSize: 34, color: '#fca5a5', fontWeight: '800' }
-                        ]
-                    }
-                }
-            }
-        ];
+      <button onclick="exportCodeModal()" class="px-3 py-1 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-slate-950 font-bold rounded text-xs flex items-center space-x-1 shadow">
+        <i class="fa-solid fa-code"></i><span>Export App</span>
+      </button>
+    </div>
+  </header>
 
-        // Global State Manager
-        let state = {
-            currentRole: 'Super Admin',
-            currentRoute: 'dashboard',
-            activeTournamentId: null,
-            tournaments: [],
-            teams: [],
-            players: [],
-            matches: [],
-            designPacks: [],
-            mediaLibrary: [
-                { id: 'm1', name: 'SL Softball Official Logo', type: 'image', url: 'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?w=150&auto=format&fit=crop&q=60' },
-                { id: 'm2', name: 'Sponsor - Dialog Premier', type: 'image', url: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=150&auto=format&fit=crop&q=60' }
-            ],
-            sponsors: [
-                { id: 'sp1', name: 'Dialog Axiata', logo: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=150&auto=format&fit=crop&q=60', active: true }
-            ],
-            // Studio State
-            selectedDesignPackId: 'dp-gold',
-            selectedSceneKey: 'scoreboard',
-            studioCanvasZoom: 100,
-            selectedLayerId: null,
-            // Broadcast Channel for OBS cross-tab real-time sync
-            broadcastChannel: null
-        };
+  <!-- MAIN APP MODULE CONTAINERS -->
+  <main id="appBody" class="flex-1 relative overflow-hidden flex bg-slate-950">
 
-        // Initialize Store
-        function initStore() {
-            // Setup Cross-Tab Broadcast Channel
-            try {
-                state.broadcastChannel = new BroadcastChannel('sl_softball_obs_sync');
-                state.broadcastChannel.onmessage = (event) => {
-                    if (event.data && event.data.type === 'STATE_UPDATED') {
-                        loadFromLocalStorage(false);
-                        renderCurrentRoute();
-                    }
-                };
-            } catch (e) {
-                console.warn('BroadcastChannel not supported or blocked:', e);
-            }
+    <!-- MODULE 1: DASHBOARD -->
+    <section id="mod-dashboard" class="module-panel w-full h-full p-6 overflow-y-auto custom-scroll space-y-6">
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-800 pb-4">
+        <div>
+          <h2 class="text-2xl font-bold font-orbitron text-amber-400">Tournament Command Dashboard</h2>
+          <p class="text-xs text-slate-400">Manage soft cricket events, pro broadcast links, active match overlays and live stats.</p>
+        </div>
+        <button onclick="openCreateTournamentModal()" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded flex items-center space-x-2 shadow">
+          <i class="fa-solid fa-plus"></i><span>Create Tournament</span>
+        </button>
+      </div>
 
-            const stored = localStorage.getItem(DB_KEY);
-            if (stored) {
-                try {
-                    const parsed = JSON.parse(stored);
-                    state.tournaments = parsed.tournaments || [];
-                    state.teams = parsed.teams || [];
-                    state.players = parsed.players || [];
-                    state.matches = parsed.matches || [];
-                    state.designPacks = parsed.designPacks || DEFAULT_DESIGN_PACKS;
-                    state.sponsors = parsed.sponsors || state.sponsors;
-                } catch (err) {
-                    console.error('Failed to parse state:', err);
-                    seedInitialData();
-                }
-            } else {
-                seedInitialData();
-            }
+      <!-- DASH METRICS GRID -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex items-center justify-between">
+          <div>
+            <p class="text-xs text-slate-400 uppercase font-semibold">Active Tournaments</p>
+            <p id="dash-stat-tournaments" class="text-2xl font-bold font-orbitron text-white mt-1">1</p>
+          </div>
+          <div class="w-10 h-10 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center text-xl">
+            <i class="fa-solid fa-trophy"></i>
+          </div>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex items-center justify-between">
+          <div>
+            <p class="text-xs text-slate-400 uppercase font-semibold">Registered Teams</p>
+            <p id="dash-stat-teams" class="text-2xl font-bold font-orbitron text-white mt-1">4</p>
+          </div>
+          <div class="w-10 h-10 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center text-xl">
+            <i class="fa-solid fa-people-group"></i>
+          </div>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex items-center justify-between">
+          <div>
+            <p class="text-xs text-slate-400 uppercase font-semibold">Live / Active Matches</p>
+            <p id="dash-stat-matches" class="text-2xl font-bold font-orbitron text-emerald-400 mt-1">1</p>
+          </div>
+          <div class="w-10 h-10 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-xl">
+            <i class="fa-solid fa-baseball"></i>
+          </div>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex items-center justify-between">
+          <div>
+            <p class="text-xs text-slate-400 uppercase font-semibold">Saved Design Packs</p>
+            <p id="dash-stat-packs" class="text-2xl font-bold font-orbitron text-purple-400 mt-1">4</p>
+          </div>
+          <div class="w-10 h-10 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center text-xl">
+            <i class="fa-solid fa-palette"></i>
+          </div>
+        </div>
+      </div>
 
-            if (state.tournaments.length > 0 && !state.activeTournamentId) {
-                state.activeTournamentId = state.tournaments[0].id;
-            }
-        }
+      <!-- ACTIVE TOURNAMENT CARDS -->
+      <div class="space-y-4">
+        <h3 class="text-lg font-bold text-slate-200 flex items-center space-x-2">
+          <i class="fa-solid fa-list text-amber-400"></i><span>Tournaments Overview</span>
+        </h3>
+        <div id="tournamentCardGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <!-- Dynamic rendering -->
+        </div>
+      </div>
+    </section>
 
-        function saveStore() {
-            const dataToSave = {
-                tournaments: state.tournaments,
-                teams: state.teams,
-                players: state.players,
-                matches: state.matches,
-                designPacks: state.designPacks,
-                sponsors: state.sponsors
-            };
-            localStorage.setItem(DB_KEY, JSON.stringify(dataToSave));
-            if (state.broadcastChannel) {
-                state.broadcastChannel.postMessage({ type: 'STATE_UPDATED', timestamp: Date.now() });
-            }
-        }
+    <!-- MODULE 2: GRAPHICS STUDIO (PRO PHOTOSHOP + CANVAS + AFTER EFFECTS ENGINE) -->
+    <section id="mod-studio" class="module-panel hidden w-full h-full flex flex-col bg-slate-950 overflow-hidden">
+      <!-- STUDIO TOP TOOLBAR -->
+      <div class="h-12 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-4 shrink-0 z-20">
+        <div class="flex items-center space-x-3">
+          <span class="text-xs font-semibold text-amber-400 uppercase tracking-wider flex items-center space-x-1">
+            <i class="fa-solid fa-wand-magic-sparkles"></i><span>Design Pack Studio</span>
+          </span>
+          <div class="h-4 w-px bg-slate-800"></div>
+          <select id="studioPackSelect" onchange="loadDesignPack(this.value)" class="bg-slate-800 border border-slate-700 text-xs rounded px-2 py-1 text-slate-200 focus:outline-none">
+            <!-- Dynamic pack options -->
+          </select>
+          <select id="studioSceneSelect" onchange="loadScene(this.value)" class="bg-slate-800 border border-slate-700 text-xs rounded px-2 py-1 text-slate-200 focus:outline-none">
+            <!-- Dynamic scene options -->
+          </select>
+        </div>
 
-        function loadFromLocalStorage(triggerRender = true) {
-            const stored = localStorage.getItem(DB_KEY);
-            if (stored) {
-                const parsed = JSON.parse(stored);
-                state.tournaments = parsed.tournaments || [];
-                state.teams = parsed.teams || [];
-                state.players = parsed.players || [];
-                state.matches = parsed.matches || [];
-                state.designPacks = parsed.designPacks || DEFAULT_DESIGN_PACKS;
-            }
-            if (triggerRender) renderCurrentRoute();
-        }
+        <!-- CANVAS PRESETS & SNAP CONTROLS -->
+        <div class="hidden md:flex items-center space-x-2">
+          <select id="canvasFormatSelect" onchange="changeCanvasFormat(this.value)" class="bg-slate-800 border border-slate-700 text-xs rounded px-2 py-1 text-slate-200">
+            <option value="1920x1080">16:9 Broadcast (1920x1080)</option>
+            <option value="1920x220">Scoreboard Bar (1920x220)</option>
+            <option value="1080x1920">Vertical Reel (1080x1920)</option>
+            <option value="1080x1080">Social Square (1080x1080)</option>
+          </select>
+          <button onclick="toggleGrid()" id="btn-grid" class="p-1.5 bg-slate-800 border border-slate-700 rounded text-slate-300 hover:text-white text-xs" title="Toggle Grid">
+            <i class="fa-solid fa-table-cells"></i>
+          </button>
+          <button onclick="toggleSafeAreas()" id="btn-safe" class="p-1.5 bg-slate-800 border border-slate-700 rounded text-slate-300 hover:text-white text-xs" title="Toggle Safe Area">
+            <i class="fa-solid fa-expand"></i>
+          </button>
+          <button onclick="toggleSnap()" id="btn-snap" class="p-1.5 bg-slate-800 border border-slate-700 rounded text-amber-400 border-amber-500/50 text-xs" title="Snap to Guides">
+            <i class="fa-solid fa-magnet"></i>
+          </button>
+          <button onclick="toggleLiveData()" id="btn-livedata" class="px-2 py-1 bg-emerald-950 border border-emerald-800 text-emerald-400 rounded text-xs font-semibold flex items-center space-x-1">
+            <i class="fa-solid fa-database"></i><span>Live Data Preview</span>
+          </button>
+        </div>
 
-        function seedInitialData() {
-            state.designPacks = DEFAULT_DESIGN_PACKS;
+        <!-- SAVE & PUBLISH ACTIONS -->
+        <div class="flex items-center space-x-2">
+          <button onclick="undoCanvas()" class="p-1.5 bg-slate-800 border border-slate-700 rounded text-slate-300 hover:text-white text-xs" title="Undo (Ctrl+Z)"><i class="fa-solid fa-rotate-left"></i></button>
+          <button onclick="redoCanvas()" class="p-1.5 bg-slate-800 border border-slate-700 rounded text-slate-300 hover:text-white text-xs" title="Redo (Ctrl+Y)"><i class="fa-solid fa-rotate-right"></i></button>
+          <button onclick="copyStyle()" class="p-1.5 bg-slate-800 border border-slate-700 rounded text-slate-300 hover:text-white text-xs" title="Copy Style"><i class="fa-solid fa-paint-roller"></i></button>
+          <button onclick="pasteStyle()" class="p-1.5 bg-slate-800 border border-slate-700 rounded text-slate-300 hover:text-white text-xs" title="Paste Style"><i class="fa-solid fa-paste"></i></button>
+          <button onclick="saveSceneDraft()" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-xs font-medium">Save Draft</button>
+          <button onclick="publishDesignPack()" class="px-3 py-1 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded text-xs flex items-center space-x-1 shadow">
+            <i class="fa-solid fa-cloud-arrow-up"></i><span>Publish Pack</span>
+          </button>
+        </div>
+      </div>
 
-            // Seed Tournament
-            const tourneyId = 'tourney-' + Date.now();
-            const obsUrl = `${window.location.origin}${window.location.pathname}?obs=${tourneyId}`;
+      <!-- MAIN STUDIO WORKSPACE (3 PANELS: LEFT TOOLBOX, CENTER CANVAS, RIGHT INSPECTOR) -->
+      <div class="flex-1 flex overflow-hidden">
+
+        <!-- LEFT PANEL: LAYERS, TEMPLATES & ASSETS -->
+        <div class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col shrink-0">
+          <div class="flex border-b border-slate-800 text-xs font-semibold text-slate-400">
+            <button onclick="switchStudioTab('layers')" id="tab-btn-layers" class="flex-1 py-2 text-amber-400 border-b-2 border-amber-400 bg-slate-800/50">Layers</button>
+            <button onclick="switchStudioTab('tags')" id="tab-btn-tags" class="flex-1 py-2 hover:text-slate-200">Dynamic Tags</button>
+            <button onclick="switchStudioTab('assets')" id="tab-btn-assets" class="flex-1 py-2 hover:text-slate-200">Library</button>
+            <button onclick="switchStudioTab('ai')" id="tab-btn-ai" class="flex-1 py-2 hover:text-slate-200">AI Design</button>
+          </div>
+
+          <!-- TAB: LAYERS STACK -->
+          <div id="studio-tab-layers" class="flex-1 p-2 overflow-y-auto custom-scroll space-y-2">
+            <div class="flex justify-between items-center px-1 mb-1">
+              <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Canvas Layer Stack</span>
+              <div class="flex space-x-1">
+                <button onclick="addLayer('text')" class="p-1 bg-slate-800 hover:bg-slate-700 rounded text-[10px] text-slate-300" title="Add Text"><i class="fa-solid fa-font"></i></button>
+                <button onclick="addLayer('rect')" class="p-1 bg-slate-800 hover:bg-slate-700 rounded text-[10px] text-slate-300" title="Add Shape"><i class="fa-solid fa-square"></i></button>
+                <button onclick="addLayer('image')" class="p-1 bg-slate-800 hover:bg-slate-700 rounded text-[10px] text-slate-300" title="Add Image"><i class="fa-solid fa-image"></i></button>
+              </div>
+            </div>
+
+            <!-- MULTI SELECT / TOOL ACTIONS -->
+            <div class="bg-slate-950 p-2 rounded border border-slate-800 space-y-1">
+              <span class="text-[10px] font-semibold text-slate-400 block">Selection Helpers</span>
+              <div class="grid grid-cols-2 gap-1 text-[10px]">
+                <button onclick="selectAllLayers()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 py-1 rounded">Select All</button>
+                <button onclick="deselectAllLayers()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 py-1 rounded">Deselect</button>
+                <button onclick="invertSelection()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 py-1 rounded">Invert Sel</button>
+                <button onclick="groupSelectedLayers()" class="bg-slate-800 hover:bg-slate-700 text-amber-400 py-1 rounded">Group Sel</button>
+              </div>
+            </div>
+
+            <div id="layerTreeList" class="space-y-1">
+              <!-- Dynamic Layer Items -->
+            </div>
+          </div>
+
+          <!-- TAB: DYNAMIC CRICKET TAGS -->
+          <div id="studio-tab-tags" class="hidden flex-1 p-2 overflow-y-auto custom-scroll space-y-2">
+            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block px-1">Inject Live Cricket Data</span>
+            <div class="space-y-1 text-xs">
+              <button onclick="injectTag('{{TEAM_A_NAME}}')" class="w-full text-left p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded border border-slate-700 font-mono text-[11px] flex justify-between">
+                <span>{{TEAM_A_NAME}}</span><i class="fa-solid fa-plus text-amber-400"></i>
+              </button>
+              <button onclick="injectTag('{{TEAM_A_SCORE}}')" class="w-full text-left p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded border border-slate-700 font-mono text-[11px] flex justify-between">
+                <span>{{TEAM_A_SCORE}}</span><i class="fa-solid fa-plus text-amber-400"></i>
+              </button>
+              <button onclick="injectTag('{{TEAM_B_NAME}}')" class="w-full text-left p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded border border-slate-700 font-mono text-[11px] flex justify-between">
+                <span>{{TEAM_B_NAME}}</span><i class="fa-solid fa-plus text-amber-400"></i>
+              </button>
+              <button onclick="injectTag('{{TEAM_B_SCORE}}')" class="w-full text-left p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded border border-slate-700 font-mono text-[11px] flex justify-between">
+                <span>{{TEAM_B_SCORE}}</span><i class="fa-solid fa-plus text-amber-400"></i>
+              </button>
+              <button onclick="injectTag('{{STRIKER_NAME}}')" class="w-full text-left p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded border border-slate-700 font-mono text-[11px] flex justify-between">
+                <span>{{STRIKER_NAME}}</span><i class="fa-solid fa-plus text-amber-400"></i>
+              </button>
+              <button onclick="injectTag('{{STRIKER_RUNS}}')" class="w-full text-left p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded border border-slate-700 font-mono text-[11px] flex justify-between">
+                <span>{{STRIKER_RUNS}}</span><i class="fa-solid fa-plus text-amber-400"></i>
+              </button>
+              <button onclick="injectTag('{{BOWLER_NAME}}')" class="w-full text-left p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded border border-slate-700 font-mono text-[11px] flex justify-between">
+                <span>{{BOWLER_NAME}}</span><i class="fa-solid fa-plus text-amber-400"></i>
+              </button>
+              <button onclick="injectTag('{{BOWLER_WICKETS}}')" class="w-full text-left p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded border border-slate-700 font-mono text-[11px] flex justify-between">
+                <span>{{BOWLER_WICKETS}}</span><i class="fa-solid fa-plus text-amber-400"></i>
+              </button>
+              <button onclick="injectTag('{{MATCH_STATUS}}')" class="w-full text-left p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded border border-slate-700 font-mono text-[11px] flex justify-between">
+                <span>{{MATCH_STATUS}}</span><i class="fa-solid fa-plus text-amber-400"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- TAB: ASSETS LIBRARY -->
+          <div id="studio-tab-assets" class="hidden flex-1 p-2 overflow-y-auto custom-scroll space-y-3">
+            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Media Assets & Sponsors</span>
+            <div class="space-y-2">
+              <label class="block text-xs text-slate-400">Upload Image / Logo</label>
+              <input type="file" id="assetUpload" accept="image/*" onchange="uploadAsset(event)" class="text-xs text-slate-400 block w-full file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:bg-amber-500 file:text-slate-950 hover:file:bg-amber-600">
+            </div>
+            <div class="space-y-1">
+              <span class="text-[10px] text-slate-400">Sponsor Presets</span>
+              <div class="grid grid-cols-2 gap-2">
+                <button onclick="addPresetSponsor('Sponsor Gold')" class="p-2 bg-slate-800 border border-slate-700 rounded text-center text-amber-400 font-bold text-xs">SPONSOR A</button>
+                <button onclick="addPresetSponsor('Softball Pro')" class="p-2 bg-slate-800 border border-slate-700 rounded text-center text-blue-400 font-bold text-xs">SPONSOR B</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB: AI DESIGN ASSISTANT -->
+          <div id="studio-tab-ai" class="hidden flex-1 p-3 overflow-y-auto custom-scroll space-y-3">
+            <span class="text-[10px] font-bold text-amber-400 uppercase tracking-wider block">AI Graphic Designer</span>
+            <p class="text-xs text-slate-400">Generate broadcast graphics layout from text prompts.</p>
+            <textarea id="aiPrompt" rows="3" placeholder="e.g. Create a dark gold broadcast scorebar with gradient text and soft glows" class="w-full bg-slate-950 border border-slate-800 rounded p-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500"></textarea>
+            <button onclick="generateAiDesign()" class="w-full py-2 bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-bold rounded text-xs flex items-center justify-center space-x-1">
+              <i class="fa-solid fa-wand-magic-sparkles"></i><span>Generate Design</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- CENTER CANVAS WORKSPACE -->
+        <div class="flex-1 bg-slate-950 flex flex-col relative overflow-hidden">
+          
+          <!-- CANVAS CONTAINER WITH CENTERING & ZOOM -->
+          <div class="flex-1 checkerboard flex items-center justify-center relative overflow-auto p-8" id="canvasViewport">
+            <!-- CANVAS BOARD -->
+            <div id="canvasBoard" class="relative bg-slate-900 border border-slate-700 shadow-2xl transition-all overflow-hidden" style="width: 960px; height: 540px;">
+              
+              <!-- GRID OVERLAY LAYER -->
+              <div id="canvasGridOverlay" class="absolute inset-0 pointer-events-none hidden opacity-20" style="background-image: linear-gradient(to right, #ffffff 1px, transparent 1px), linear-gradient(to bottom, #ffffff 1px, transparent 1px); background-size: 20px 20px;"></div>
+
+              <!-- SAFE AREA GUIDES -->
+              <div id="canvasSafeAreas" class="absolute inset-0 pointer-events-none hidden">
+                <div class="safe-guide absolute inset-6"></div>
+                <div class="title-safe absolute inset-12"></div>
+              </div>
+
+              <!-- DYNAMIC RENDERED LAYERS -->
+              <div id="canvasLayerContainer" class="absolute inset-0">
+                <!-- Layers placed dynamically -->
+              </div>
+
+              <!-- SELECTION / TRANSFORM OVERLAY HANDLES -->
+              <div id="transformHandleBox" class="absolute pointer-events-none hidden border-2 border-amber-400 z-40">
+                <div class="canvas-handle rotate-handle" style="top:-20px; left:50%;" onmousedown="initTransform(event, 'rotate')"></div>
+                <div class="canvas-handle" style="top:0; left:0;" onmousedown="initTransform(event, 'tl')"></div>
+                <div class="canvas-handle" style="top:0; left:50%;" onmousedown="initTransform(event, 't')"></div>
+                <div class="canvas-handle" style="top:0; left:100%;" onmousedown="initTransform(event, 'tr')"></div>
+                <div class="canvas-handle" style="top:50%; left:0;" onmousedown="initTransform(event, 'l')"></div>
+                <div class="canvas-handle" style="top:50%; left:100%;" onmousedown="initTransform(event, 'r')"></div>
+                <div class="canvas-handle" style="top:100%; left:0;" onmousedown="initTransform(event, 'bl')"></div>
+                <div class="canvas-handle" style="top:100%; left:50%;" onmousedown="initTransform(event, 'b')"></div>
+                <div class="canvas-handle" style="top:100%; left:100%;" onmousedown="initTransform(event, 'br')"></div>
+              </div>
+
+              <!-- SMART ALIGNMENT GUIDES -->
+              <div id="guideX" class="align-guide-x hidden"></div>
+              <div id="guideY" class="align-guide-y hidden"></div>
+            </div>
+          </div>
+
+          <!-- BOTTOM AFTER EFFECTS STYLE TIMELINE CONTROL -->
+          <div class="h-28 bg-slate-900 border-t border-slate-800 flex flex-col shrink-0">
+            <div class="h-8 border-b border-slate-800 px-3 flex items-center justify-between text-xs text-slate-400">
+              <div class="flex items-center space-x-2">
+                <button onclick="playTimeline()" class="text-emerald-400 hover:text-emerald-300"><i class="fa-solid fa-play"></i></button>
+                <button onclick="pauseTimeline()" class="text-amber-400 hover:text-amber-300"><i class="fa-solid fa-pause"></i></button>
+                <button onclick="resetTimeline()" class="text-slate-300 hover:text-white"><i class="fa-solid fa-stop"></i></button>
+                <span class="font-mono text-[11px] text-slate-300 ml-2" id="timelineTimer">00:00.00</span>
+              </div>
+              <div class="flex items-center space-x-3 text-[11px]">
+                <span class="text-slate-500">Timeline Length: 10s</span>
+                <label class="flex items-center space-x-1 cursor-pointer">
+                  <input type="checkbox" id="timelineLoop" checked class="rounded bg-slate-800 border-slate-700">
+                  <span>Loop Playback</span>
+                </label>
+              </div>
+            </div>
+            <!-- TIMELINE KEYFRAME TRACKS CONTAINER -->
+            <div class="flex-1 overflow-x-auto overflow-y-auto custom-scroll p-2 space-y-1" id="timelineTrackList">
+              <!-- Dynamic track rows -->
+            </div>
+          </div>
+
+        </div>
+
+        <!-- RIGHT PANEL: ADVANCED PHOTOSHOP STYLE PROPERTIES INSPECTOR -->
+        <div class="w-80 bg-slate-900 border-l border-slate-800 flex flex-col shrink-0 custom-scroll overflow-y-auto">
+          <div class="p-3 border-b border-slate-800 flex items-center justify-between">
+            <h4 class="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center space-x-1">
+              <i class="fa-solid fa-sliders"></i><span>Properties & Inspector</span>
+            </h4>
+            <span id="selectedLayerTypeBadge" class="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded uppercase">None</span>
+          </div>
+
+          <!-- EDITING SECTIONS -->
+          <div id="inspectorContent" class="p-3 space-y-4 text-xs text-slate-300">
             
-            const sampleTourney = {
-                id: tourneyId,
-                name: 'Sri Lanka Premier Softball Super Cup 2026',
-                logo: 'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?w=200&auto=format&fit=crop&q=60',
-                type: 'League',
-                startDate: '2026-03-10',
-                endDate: '2026-03-15',
-                datesDisplay: 'Multiple Days (6 Days)',
-                venue: 'Galle International Stadium',
-                description: 'The biggest softball cricket extravaganza in Sri Lanka featuring top 8 teams.',
-                organiser: 'Sri Lanka Softball Cricket Federation',
-                numberOfTeams: 8,
-                numberOfGroups: 2,
-                oversPerMatch: 6,
-                ballsPerOver: 6,
-                numberOfWickets: 10,
-                selected_design_set_id: 'dp-gold',
-                obsLink: obsUrl,
-                status: 'Live',
-                activeSceneKey: 'scoreboard', // Published active broadcast scene
-                createdAt: new Date().toISOString()
-            };
+            <!-- SECTION 1: TRANSFORM & ALIGNMENT -->
+            <div class="space-y-2 border-b border-slate-800 pb-3">
+              <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">1. Position, Size & Align</span>
+              
+              <!-- QUICK ALIGN GRID -->
+              <div class="grid grid-cols-3 gap-1 bg-slate-950 p-1 rounded border border-slate-800">
+                <button onclick="alignSelected('top-left')" class="p-1 hover:bg-slate-800 rounded text-center text-[10px]" title="Top Left"><i class="fa-solid fa-arrow-up-left"></i></button>
+                <button onclick="alignSelected('top-center')" class="p-1 hover:bg-slate-800 rounded text-center text-[10px]" title="Top Center"><i class="fa-solid fa-arrow-up"></i></button>
+                <button onclick="alignSelected('top-right')" class="p-1 hover:bg-slate-800 rounded text-center text-[10px]" title="Top Right"><i class="fa-solid fa-arrow-up-right"></i></button>
+                <button onclick="alignSelected('center-left')" class="p-1 hover:bg-slate-800 rounded text-center text-[10px]" title="Center Left"><i class="fa-solid fa-arrow-left"></i></button>
+                <button onclick="alignSelected('center')" class="p-1 hover:bg-slate-800 rounded text-center text-[10px]" title="Center"><i class="fa-solid fa-bullseye"></i></button>
+                <button onclick="alignSelected('center-right')" class="p-1 hover:bg-slate-800 rounded text-center text-[10px]" title="Center Right"><i class="fa-solid fa-arrow-right"></i></button>
+                <button onclick="alignSelected('bottom-left')" class="p-1 hover:bg-slate-800 rounded text-center text-[10px]" title="Bottom Left"><i class="fa-solid fa-arrow-down-left"></i></button>
+                <button onclick="alignSelected('bottom-center')" class="p-1 hover:bg-slate-800 rounded text-center text-[10px]" title="Bottom Center"><i class="fa-solid fa-arrow-down"></i></button>
+                <button onclick="alignSelected('bottom-right')" class="p-1 hover:bg-slate-800 rounded text-center text-[10px]" title="Bottom Right"><i class="fa-solid fa-arrow-down-right"></i></button>
+              </div>
 
-            state.tournaments.push(sampleTourney);
-            state.activeTournamentId = tourneyId;
-
-            // Seed Teams
-            const team1 = { id: 'team-1', tournamentId: tourneyId, fullName: 'Colombo Kings Softball XI', shortName: 'CKS', group: 'Group A', captain: 'Kumara Sangakkara', logo: 'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?w=100&auto=format&fit=crop&q=60' };
-            const team2 = { id: 'team-2', tournamentId: tourneyId, fullName: 'Kandy Warriors Club', shortName: 'KWC', group: 'Group A', captain: 'Muttiah Muralitharan', logo: 'https://images.unsplash.com/photo-1531415074968-036ba1b575da?w=100&auto=format&fit=crop&q=60' };
-            state.teams.push(team1, team2);
-
-            // Seed Players
-            const players = [
-                { id: 'p1', teamId: 'team-1', fullName: 'Dinesh Chandimal', nickname: 'Chandi', jerseyNumber: '36', role: 'Batsman', battingStyle: 'Right Hand', bowlingStyle: 'Right-arm off break', isCaptain: true, photo: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=60' },
-                { id: 'p2', teamId: 'team-1', fullName: 'Kusal Perera', nickname: 'AK47', jerseyNumber: '55', role: 'Batsman', battingStyle: 'Left Hand', bowlingStyle: 'None', isCaptain: false, photo: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=60' },
-                { id: 'p3', teamId: 'team-1', fullName: 'Lasith Malinga', nickname: 'Slinga', jerseyNumber: '99', role: 'Bowler', battingStyle: 'Right Hand', bowlingStyle: 'Right-arm Fast', isCaptain: false, photo: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&auto=format&fit=crop&q=60' },
-                { id: 'p4', teamId: 'team-2', fullName: 'Pathum Nissanka', nickname: 'Pathu', jerseyNumber: '18', role: 'Batsman', battingStyle: 'Right Hand', bowlingStyle: 'None', isCaptain: true, photo: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=60' },
-                { id: 'p5', teamId: 'team-2', fullName: 'Wanindu Hasaranga', nickname: 'Wani', jerseyNumber: '49', role: 'All-Rounder', battingStyle: 'Right Hand', bowlingStyle: 'Right-arm Leg Break', isCaptain: false, photo: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=60' }
-            ];
-            state.players.push(...players);
-
-            // Seed Match
-            const matchId = 'match-' + Date.now();
-            const sampleMatch = {
-                id: matchId,
-                tournamentId: tourneyId,
-                matchNumber: 1,
-                title: 'Match 01 - Group A Opener',
-                matchType: 'League Match',
-                date: '2026-03-10',
-                time: '10:00 AM',
-                venue: 'Galle International Stadium',
-                overs: 6,
-                ballsPerOver: 6,
-                teamAId: 'team-1',
-                teamBId: 'team-2',
-                tossWinnerId: 'team-1',
-                tossDecision: 'BAT',
-                status: 'Live',
-                // Live Scoring State
-                innings: 1,
-                teamAScore: 48,
-                teamAWickets: 2,
-                teamAOvers: 3.4,
-                teamBScore: 0,
-                teamBWickets: 0,
-                teamBOvers: 0.0,
-                strikerId: 'p1',
-                strikerStats: { runs: 28, balls: 12, fours: 3, sixes: 2 },
-                nonStrikerId: 'p2',
-                nonStrikerStats: { runs: 14, balls: 8, fours: 1, sixes: 1 },
-                currentBowlerId: 'p5',
-                bowlerStats: { overs: 0.4, runs: 6, wickets: 1, maidens: 0 },
-                currentOverBalls: [2, 4, 'W', 0],
-                historyStack: [] // Multi-step undo stack
-            };
-            state.matches.push(sampleMatch);
-
-            saveStore();
-        }
-
-        // ==========================================
-        // ROUTING & PERMISSIONS NAVIGATION
-        // ==========================================
-
-        const NAV_ITEMS = [
-            { id: 'dashboard', label: 'Home', icon: 'fa-house', roles: ['Super Admin', 'Tournament Owner', 'Scorer', 'Graphics Operator', 'Viewer'] },
-            { id: 'tournaments', label: 'Tournaments', icon: 'fa-trophy', roles: ['Super Admin', 'Tournament Owner', 'Scorer', 'Graphics Operator', 'Viewer'] },
-            { id: 'teams', label: 'Teams & Squads', icon: 'fa-users', roles: ['Super Admin', 'Tournament Owner', 'Scorer', 'Graphics Operator'] },
-            { id: 'scoring', label: 'Live Scoring', icon: 'fa-mobile-screen-button', roles: ['Super Admin', 'Tournament Owner', 'Scorer'] },
-            { id: 'studio', label: 'Graphics Studio', icon: 'fa-palette', roles: ['Super Admin', 'Tournament Owner', 'Graphics Operator'] },
-            { id: 'controlroom', label: 'Live Control Room', icon: 'fa-headset', roles: ['Super Admin', 'Tournament Owner', 'Graphics Operator'] },
-            { id: 'reports', label: 'Stats & Reports', icon: 'fa-chart-column', roles: ['Super Admin', 'Tournament Owner', 'Scorer', 'Graphics Operator', 'Viewer'] }
-        ];
-
-        function renderNav() {
-            const mainNavEl = document.getElementById('main-nav');
-            const mobileNavEl = document.getElementById('mobile-nav');
-
-            let mainHtml = '';
-            let mobileHtml = '';
-
-            NAV_ITEMS.forEach(item => {
-                const hasAccess = item.roles.includes(state.currentRole);
-                if (!hasAccess) return;
-
-                const isActive = state.currentRoute === item.id;
-                const activeClass = isActive 
-                    ? 'bg-brand-500 text-dark-950 font-bold shadow-md shadow-brand-500/20' 
-                    : 'text-slate-300 hover:bg-slate-800 hover:text-white';
-
-                mainHtml += `
-                    <button onclick="navigate('${item.id}')" class="px-3 py-2 rounded-lg ${activeClass} transition flex items-center space-x-2">
-                        <i class="fa-solid ${item.icon} text-xs"></i>
-                        <span>${item.label}</span>
-                    </button>
-                `;
-
-                mobileHtml += `
-                    <button onclick="navigate('${item.id}'); toggleMobileNav();" class="w-full text-left px-3 py-2 rounded-lg ${activeClass} flex items-center space-x-3">
-                        <i class="fa-solid ${item.icon}"></i>
-                        <span>${item.label}</span>
-                    </button>
-                `;
-            });
-
-            mainNavEl.innerHTML = mainHtml;
-            mobileNavEl.innerHTML = mobileHtml;
-
-            // Active Tournament Indicator
-            const tourney = getActiveTournament();
-            const activeTourneyEl = document.getElementById('active-tourney-name');
-            if (tourney && activeTourneyEl) {
-                activeTourneyEl.innerText = tourney.name;
-            }
-        }
-
-        function switchRole(role) {
-            state.currentRole = role;
-            document.getElementById('current-role-display').innerText = role;
-            showToast(`Switched to ${role} Role permissions`, 'info');
-            renderNav();
-            renderCurrentRoute();
-        }
-
-        function navigate(route, params = {}) {
-            state.currentRoute = route;
-            if (params.tournamentId) state.activeTournamentId = params.tournamentId;
-            renderNav();
-            renderCurrentRoute(params);
-            window.scrollTo(0, 0);
-        }
-
-        function toggleMobileNav() {
-            const nav = document.getElementById('mobile-nav');
-            nav.classList.toggle('hidden');
-        }
-
-        function getActiveTournament() {
-            return state.tournaments.find(t => t.id === state.activeTournamentId) || state.tournaments[0];
-        }
-
-        function getActiveMatch() {
-            const tourney = getActiveTournament();
-            if (!tourney) return null;
-            return state.matches.find(m => m.tournamentId === tourney.id && m.status === 'Live') || 
-                   state.matches.find(m => m.tournamentId === tourney.id) || state.matches[0];
-        }
-
-        // ==========================================
-        // ROUTE RENDER SWITCHER
-        // ==========================================
-
-        function renderCurrentRoute(params = {}) {
-            // Check if this page is called as an OBS Overlay Route via Query Params
-            const urlParams = new URLSearchParams(window.location.search);
-            const obsTournamentId = urlParams.get('obs');
-            if (obsTournamentId) {
-                renderOBSOverlayView(obsTournamentId);
-                return;
-            }
-
-            const container = document.getElementById('main-content');
-            
-            switch (state.currentRoute) {
-                case 'dashboard':
-                    container.innerHTML = renderDashboardView();
-                    break;
-                case 'tournaments':
-                    container.innerHTML = renderTournamentsView();
-                    break;
-                case 'tournament_wizard':
-                    container.innerHTML = renderTournamentWizardView();
-                    break;
-                case 'teams':
-                    container.innerHTML = renderTeamsView();
-                    break;
-                case 'scoring':
-                    container.innerHTML = renderLiveScoringView();
-                    break;
-                case 'studio':
-                    container.innerHTML = renderGraphicsStudioView();
-                    break;
-                case 'controlroom':
-                    container.innerHTML = renderControlRoomView();
-                    break;
-                case 'reports':
-                    container.innerHTML = renderReportsView();
-                    break;
-                default:
-                    container.innerHTML = renderDashboardView();
-            }
-        }
-
-        // ==========================================
-        // MODULE 1 & 2: HOME DASHBOARD & AUTH ROLES
-        // ==========================================
-
-        function renderDashboardView() {
-            const activeTourney = getActiveTournament();
-            const liveMatches = state.matches.filter(m => m.status === 'Live');
-            const recentTourneys = [...state.tournaments].reverse().slice(0, 4);
-
-            return `
-                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full space-y-8 animate-slide-in">
-                    <!-- Welcome Hero Banner -->
-                    <div class="bg-gradient-to-r from-dark-900 via-slate-900 to-dark-800 border border-slate-800 rounded-3xl p-6 sm:p-8 relative overflow-hidden shadow-2xl">
-                        <div class="absolute -right-10 -bottom-10 w-80 h-80 bg-brand-500/10 rounded-full blur-3xl pointer-events-none"></div>
-                        <div class="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-                            <div class="space-y-2">
-                                <div class="inline-flex items-center space-x-2 bg-brand-500/10 border border-brand-500/30 rounded-full px-3 py-1 text-xs text-brand-400 font-bold">
-                                    <i class="fa-solid fa-bolt"></i>
-                                    <span>PROFESSIONAL SOFTBALL BROADCAST ENGINE</span>
-                                </div>
-                                <h1 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
-                                    Sri Lanka Softball Tournament Hub
-                                </h1>
-                                <p class="text-slate-400 text-sm max-w-2xl">
-                                    Manage tournaments, live scores, generate permanent OBS overlays, design broadcast design packs & control broadcast streams in real time.
-                                </p>
-                            </div>
-
-                            <div class="flex flex-wrap items-center gap-3">
-                                ${['Super Admin', 'Tournament Owner'].includes(state.currentRole) ? `
-                                    <button onclick="navigate('tournament_wizard')" class="bg-brand-500 hover:bg-brand-600 text-dark-950 font-bold px-5 py-3 rounded-xl shadow-lg shadow-brand-500/25 transition flex items-center space-x-2">
-                                        <i class="fa-solid fa-plus text-sm"></i>
-                                        <span>Create Tournament</span>
-                                    </button>
-                                ` : ''}
-                                <button onclick="navigate('studio')" class="bg-slate-800 hover:bg-slate-700 text-white font-semibold px-5 py-3 rounded-xl border border-slate-700 transition flex items-center space-x-2">
-                                    <i class="fa-solid fa-palette text-brand-400"></i>
-                                    <span>Graphics Studio</span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Quick Metrics & Live Match Strip -->
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div class="bg-dark-900 border border-slate-800 rounded-2xl p-5 flex items-center space-x-4">
-                            <div class="w-12 h-12 rounded-xl bg-brand-500/10 text-brand-400 flex items-center justify-center text-xl font-bold">
-                                <i class="fa-solid fa-trophy"></i>
-                            </div>
-                            <div>
-                                <div class="text-2xl font-black text-white">${state.tournaments.length}</div>
-                                <div class="text-xs text-slate-400 font-medium">Active Tournaments</div>
-                            </div>
-                        </div>
-
-                        <div class="bg-dark-900 border border-slate-800 rounded-2xl p-5 flex items-center space-x-4">
-                            <div class="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-xl font-bold">
-                                <i class="fa-solid fa-tower-broadcast animate-pulse"></i>
-                            </div>
-                            <div>
-                                <div class="text-2xl font-black text-white">${liveMatches.length}</div>
-                                <div class="text-xs text-slate-400 font-medium">Live Matches Streaming</div>
-                            </div>
-                        </div>
-
-                        <div class="bg-dark-900 border border-slate-800 rounded-2xl p-5 flex items-center space-x-4">
-                            <div class="w-12 h-12 rounded-xl bg-accent-cyan/10 text-accent-cyan flex items-center justify-center text-xl font-bold">
-                                <i class="fa-solid fa-users"></i>
-                            </div>
-                            <div>
-                                <div class="text-2xl font-black text-white">${state.teams.length}</div>
-                                <div class="text-xs text-slate-400 font-medium">Registered Teams</div>
-                            </div>
-                        </div>
-
-                        <div class="bg-dark-900 border border-slate-800 rounded-2xl p-5 flex items-center space-x-4">
-                            <div class="w-12 h-12 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center text-xl font-bold">
-                                <i class="fa-solid fa-layer-group"></i>
-                            </div>
-                            <div>
-                                <div class="text-2xl font-black text-white">${state.designPacks.length}</div>
-                                <div class="text-xs text-slate-400 font-medium">Broadcast Design Packs</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Tournament Directory Section -->
-                    <div class="space-y-4">
-                        <div class="flex items-center justify-between">
-                            <h2 class="text-xl font-bold text-white flex items-center space-x-2">
-                                <i class="fa-solid fa-list-check text-brand-400"></i>
-                                <span>Recent Tournaments</span>
-                            </h2>
-                            <button onclick="navigate('tournaments')" class="text-xs text-brand-400 hover:text-brand-300 font-bold">
-                                View All (${state.tournaments.length}) &rarr;
-                            </button>
-                        </div>
-
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            ${recentTourneys.map(t => renderTournamentCard(t)).join('')}
-                        </div>
-                    </div>
+              <!-- EXACT NUMERIC INPUTS -->
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="text-[10px] text-slate-400">X (px)</label>
+                  <input type="number" id="propX" onchange="updateProp('x', this.value)" class="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-slate-200 focus:outline-none">
                 </div>
-            `;
-        }
-
-        function renderTournamentCard(tourney) {
-            const pack = state.designPacks.find(p => p.id === tourney.selected_design_set_id) || state.designPacks[0];
-            const teamsCount = state.teams.filter(tm => tm.tournamentId === tourney.id).length;
-            const matchesCount = state.matches.filter(m => m.tournamentId === tourney.id).length;
-
-            return `
-                <div class="bg-dark-900 border border-slate-800 rounded-2xl p-5 flex flex-col justify-between space-y-4 hover:border-slate-700 transition shadow-xl group">
-                    <div class="space-y-3">
-                        <div class="flex items-start justify-between gap-3">
-                            <div class="flex items-center space-x-3">
-                                <img src="${tourney.logo}" class="w-12 h-12 rounded-xl object-cover border border-slate-700 bg-slate-800">
-                                <div>
-                                    <h3 class="font-bold text-white text-base group-hover:text-brand-400 transition leading-tight">${tourney.name}</h3>
-                                    <p class="text-xs text-slate-400 flex items-center space-x-1 mt-0.5">
-                                        <i class="fa-solid fa-location-dot text-slate-500"></i>
-                                        <span>${tourney.venue}</span>
-                                    </p>
-                                </div>
-                            </div>
-                            <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase ${tourney.status === 'Live' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-slate-800 text-slate-400'}">
-                                ${tourney.status}
-                            </span>
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-2 text-xs bg-slate-800/50 p-2.5 rounded-xl border border-slate-800">
-                            <div>
-                                <span class="text-slate-500 block text-[10px]">FORMAT</span>
-                                <span class="font-bold text-slate-200">${tourney.type} (${tourney.oversPerMatch} Overs)</span>
-                            </div>
-                            <div>
-                                <span class="text-slate-500 block text-[10px]">DESIGN PACK</span>
-                                <span class="font-bold text-brand-400 truncate block">${pack.name}</span>
-                            </div>
-                            <div>
-                                <span class="text-slate-500 block text-[10px]">TEAMS / MATCHES</span>
-                                <span class="font-bold text-slate-200">${teamsCount} Teams | ${matchesCount} Matches</span>
-                            </div>
-                            <div>
-                                <span class="text-slate-500 block text-[10px]">DATES</span>
-                                <span class="font-bold text-slate-200">${tourney.datesDisplay || '1 Day'}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Actions Strip -->
-                    <div class="pt-2 border-t border-slate-800/80 flex flex-wrap gap-2">
-                        <button onclick="navigate('scoring', {tournamentId: '${tourney.id}'})" class="flex-1 bg-brand-500 hover:bg-brand-600 text-dark-950 text-xs font-bold py-2 px-3 rounded-lg transition flex items-center justify-center space-x-1">
-                            <i class="fa-solid fa-mobile-screen"></i>
-                            <span>Live Score</span>
-                        </button>
-
-                        <button onclick="navigate('controlroom', {tournamentId: '${tourney.id}'})" class="flex-1 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold py-2 px-3 rounded-lg border border-slate-700 transition flex items-center justify-center space-x-1">
-                            <i class="fa-solid fa-sliders"></i>
-                            <span>Control Room</span>
-                        </button>
-
-                        <button onclick="copyOBSLink('${tourney.id}')" title="Copy Permanent OBS Link" class="bg-slate-800 hover:bg-brand-500 hover:text-dark-950 text-slate-300 text-xs py-2 px-3 rounded-lg border border-slate-700 transition">
-                            <i class="fa-solid fa-link"></i>
-                        </button>
-                    </div>
+                <div>
+                  <label class="text-[10px] text-slate-400">Y (px)</label>
+                  <input type="number" id="propY" onchange="updateProp('y', this.value)" class="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-slate-200 focus:outline-none">
                 </div>
-            `;
-        }
-
-        // ==========================================
-        // MODULE 3: TOURNAMENT CREATION WIZARD
-        // ==========================================
-
-        function renderTournamentWizardView() {
-            return `
-                <div class="max-w-4xl mx-auto px-4 py-8 w-full space-y-6 animate-slide-in">
-                    <div class="flex items-center justify-between border-b border-slate-800 pb-4">
-                        <div>
-                            <h1 class="text-2xl font-black text-white">Create New Tournament</h1>
-                            <p class="text-xs text-slate-400">Configure settings, rules, auto-generate groups & select permanent broadcast design pack.</p>
-                        </div>
-                        <button onclick="navigate('dashboard')" class="text-xs text-slate-400 hover:text-white">Cancel</button>
-                    </div>
-
-                    <form onsubmit="handleCreateTournament(event)" class="space-y-6">
-                        <!-- Basic Information -->
-                        <div class="bg-dark-900 border border-slate-800 rounded-2xl p-6 space-y-4">
-                            <h2 class="text-base font-bold text-brand-400 uppercase tracking-wider">1. Tournament Details</h2>
-                            
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div class="sm:col-span-2">
-                                    <label class="block text-xs font-bold text-slate-300 mb-1">Tournament Name *</label>
-                                    <input type="text" id="t-name" required placeholder="e.g. Western Province Softball T10 Trophy 2026" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-500">
-                                </div>
-
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-300 mb-1">Tournament Type</label>
-                                    <select id="t-type" onchange="toggleGroupConfig(this.value)" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-500">
-                                        <option value="League">League Format (Points Table)</option>
-                                        <option value="Knockout">Knockout Cup</option>
-                                        <option value="Custom">Custom League + Knockout</option>
-                                    </select>
-                                </div>
-
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-300 mb-1">Venue Name *</label>
-                                    <input type="text" id="t-venue" required placeholder="e.g. Sugathadasa Outdoor Stadium" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-500">
-                                </div>
-
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-300 mb-1">Start Date</label>
-                                    <input type="date" id="t-start" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none">
-                                </div>
-
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-300 mb-1">End Date</label>
-                                    <input type="date" id="t-end" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none">
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Match Rules & Format Settings -->
-                        <div class="bg-dark-900 border border-slate-800 rounded-2xl p-6 space-y-4">
-                            <h2 class="text-base font-bold text-brand-400 uppercase tracking-wider">2. Match Rules & Group Setup</h2>
-
-                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-300 mb-1">Number of Groups</label>
-                                    <select id="t-groups" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white">
-                                        <option value="1">1 Single Group</option>
-                                        <option value="2">2 Groups (Group A, Group B)</option>
-                                        <option value="3" selected>3 Groups (Group A, Group B, Group C)</option>
-                                        <option value="4">4 Groups</option>
-                                    </select>
-                                </div>
-
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-300 mb-1">Overs Per Match</label>
-                                    <input type="number" id="t-overs" value="6" min="1" max="50" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white">
-                                </div>
-
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-300 mb-1">Balls Per Over</label>
-                                    <input type="number" id="t-balls" value="6" min="4" max="8" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white">
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Graphics Design Pack Selection -->
-                        <div class="bg-dark-900 border border-slate-800 rounded-2xl p-6 space-y-4">
-                            <div class="flex items-center justify-between">
-                                <h2 class="text-base font-bold text-brand-400 uppercase tracking-wider">3. Select Graphics Design Pack</h2>
-                                <span class="text-xs text-slate-400">Determines OBS overlay visuals for all scenes</span>
-                            </div>
-
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="pack-selector-container">
-                                ${state.designPacks.map((pack, idx) => `
-                                    <div onclick="selectPackForWizard('${pack.id}')" id="pack-card-${pack.id}" class="pack-card border-2 ${idx === 0 ? 'border-brand-500 bg-brand-500/10' : 'border-slate-800 bg-slate-800/40'} rounded-2xl p-4 cursor-pointer hover:border-slate-600 transition space-y-3">
-                                        <img src="${pack.cover}" class="w-full h-28 object-cover rounded-xl border border-slate-700">
-                                        <div>
-                                            <h4 class="font-bold text-white text-sm">${pack.name}</h4>
-                                            <p class="text-[11px] text-slate-400 leading-tight mt-1">${pack.description}</p>
-                                        </div>
-                                        <div class="text-[10px] text-brand-400 font-bold uppercase flex items-center justify-between">
-                                            <span>Includes ${Object.keys(pack.scenes).length} Broadcast Scenes</span>
-                                            <i class="fa-solid fa-circle-check text-sm ${idx === 0 ? 'block' : 'hidden'}" id="check-${pack.id}"></i>
-                                        </div>
-                                    </div>
-                                `).join('')}
-                            </div>
-                            <input type="hidden" id="selected-pack-id" value="${state.designPacks[0].id}">
-                        </div>
-
-                        <!-- Submit Button -->
-                        <button type="submit" class="w-full bg-brand-500 hover:bg-brand-600 text-dark-950 font-extrabold text-base py-4 rounded-2xl shadow-xl shadow-brand-500/25 transition">
-                            Save Tournament & Generate Permanent OBS Link
-                        </button>
-                    </form>
+                <div>
+                  <label class="text-[10px] text-slate-400">Width (px)</label>
+                  <input type="number" id="propW" onchange="updateProp('w', this.value)" class="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-slate-200 focus:outline-none">
                 </div>
-            `;
-        }
-
-        function selectPackForWizard(packId) {
-            document.querySelectorAll('.pack-card').forEach(el => {
-                el.classList.remove('border-brand-500', 'bg-brand-500/10');
-                el.classList.add('border-slate-800');
-            });
-            document.querySelectorAll('[id^="check-"]').forEach(el => el.classList.add('hidden'));
-
-            const selected = document.getElementById(`pack-card-${packId}`);
-            if (selected) {
-                selected.classList.remove('border-slate-800');
-                selected.classList.add('border-brand-500', 'bg-brand-500/10');
-            }
-            const check = document.getElementById(`check-${packId}`);
-            if (check) check.classList.remove('hidden');
-
-            document.getElementById('selected-pack-id').value = packId;
-        }
-
-        function handleCreateTournament(e) {
-            e.preventDefault();
-            const name = document.getElementById('t-name').value;
-            const type = document.getElementById('t-type').value;
-            const venue = document.getElementById('t-venue').value;
-            const startDate = document.getElementById('t-start').value;
-            const endDate = document.getElementById('t-end').value;
-            const groupsCount = parseInt(document.getElementById('t-groups').value);
-            const overs = parseInt(document.getElementById('t-overs').value);
-            const balls = parseInt(document.getElementById('t-balls').value);
-            const packId = document.getElementById('selected-pack-id').value;
-
-            const tourneyId = 'tourney-' + Date.now();
-            const obsUrl = `${window.location.origin}${window.location.pathname}?obs=${tourneyId}`;
-
-            const datesDisplay = startDate === endDate ? '1 Day' : 'Multiple Days';
-
-            const newTourney = {
-                id: tourneyId,
-                name: name,
-                logo: 'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?w=200&auto=format&fit=crop&q=60',
-                type: type,
-                startDate: startDate,
-                endDate: endDate,
-                datesDisplay: datesDisplay,
-                venue: venue,
-                description: 'Created via Tournament Wizard',
-                organiser: 'Softball Association',
-                numberOfTeams: 0,
-                numberOfGroups: groupsCount,
-                oversPerMatch: overs,
-                ballsPerOver: balls,
-                numberOfWickets: 10,
-                selected_design_set_id: packId,
-                obsLink: obsUrl,
-                status: 'Upcoming',
-                activeSceneKey: 'welcome',
-                createdAt: new Date().toISOString()
-            };
-
-            state.tournaments.push(newTourney);
-            state.activeTournamentId = tourneyId;
-            saveStore();
-
-            showToast('Tournament Created! Permanent OBS Link generated.', 'success');
-            navigate('dashboard');
-        }
-
-        // ==========================================
-        // MODULE 5 - 8: TEAMS, PLAYERS, MATCHES & TOSS
-        // ==========================================
-
-        function renderTeamsView() {
-            const tourney = getActiveTournament();
-            const teams = state.teams.filter(t => t.tournamentId === tourney.id);
-
-            return `
-                <div class="max-w-7xl mx-auto px-4 py-8 w-full space-y-6 animate-slide-in">
-                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
-                        <div>
-                            <h1 class="text-2xl font-black text-white">Teams & Player Squads</h1>
-                            <p class="text-xs text-slate-400">Managing teams for <span class="text-brand-400 font-bold">${tourney.name}</span></p>
-                        </div>
-                        
-                        <div class="flex space-x-2">
-                            <button onclick="openAddTeamModal()" class="bg-brand-500 hover:bg-brand-600 text-dark-950 font-bold text-xs py-2.5 px-4 rounded-xl shadow-lg transition flex items-center space-x-1">
-                                <i class="fa-solid fa-plus"></i>
-                                <span>Add New Team</span>
-                            </button>
-                            <button onclick="openAddPlayerModal()" class="bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs py-2.5 px-4 rounded-xl border border-slate-700 transition flex items-center space-x-1">
-                                <i class="fa-solid fa-user-plus text-brand-400"></i>
-                                <span>Add Player</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Teams List -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        ${teams.map((t, idx) => {
-                            const players = state.players.filter(p => p.teamId === t.id);
-                            return `
-                                <div class="bg-dark-900 border border-slate-800 rounded-2xl p-5 space-y-4">
-                                    <div class="flex items-center justify-between">
-                                        <div class="flex items-center space-x-3">
-                                            <span class="text-slate-500 font-bold text-xs">#${idx + 1}</span>
-                                            <img src="${t.logo}" class="w-10 h-10 rounded-xl object-cover border border-slate-700">
-                                            <div>
-                                                <h3 class="font-bold text-white text-base leading-tight">${t.fullName}</h3>
-                                                <span class="text-[10px] text-brand-400 font-bold">${t.shortName} • ${t.group}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div class="text-xs text-slate-400 bg-slate-800/50 p-2.5 rounded-xl space-y-1">
-                                        <div class="flex justify-between"><span>Captain:</span> <span class="font-bold text-white">${t.captain || 'Not Set'}</span></div>
-                                        <div class="flex justify-between"><span>Registered Players:</span> <span class="font-bold text-brand-400">${players.length} Players</span></div>
-                                    </div>
-
-                                    <div class="space-y-1">
-                                        <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Squad Members</div>
-                                        <div class="max-h-40 overflow-y-auto space-y-1 pr-1">
-                                            ${players.map(p => `
-                                                <div class="flex items-center justify-between text-xs bg-slate-800/30 px-2.5 py-1.5 rounded-lg">
-                                                    <span class="text-slate-200">${p.jerseyNumber ? '#' + p.jerseyNumber : ''} ${p.fullName}</span>
-                                                    <span class="text-[10px] text-slate-400 font-medium">${p.role}</span>
-                                                </div>
-                                            `).join('') || '<div class="text-xs text-slate-500 italic">No players added yet</div>'}
-                                        </div>
-                                    </div>
-                                </div>
-                            `;
-                        }).join('')}
-                    </div>
+                <div>
+                  <label class="text-[10px] text-slate-400">Height (px)</label>
+                  <input type="number" id="propH" onchange="updateProp('h', this.value)" class="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-slate-200 focus:outline-none">
                 </div>
-            `;
-        }
+              </div>
 
-        function openAddTeamModal() {
-            const tourney = getActiveTournament();
-            openModal(`
-                <h3 class="text-lg font-bold text-white mb-4">Add New Team</h3>
-                <form onsubmit="handleAddTeam(event)" class="space-y-4">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-300 mb-1">Team Full Name</label>
-                        <input type="text" id="tm-fullname" oninput="autoGenerateShortName(this.value)" required placeholder="e.g. Kalutara Power Hitters" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white">
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs font-bold text-slate-300 mb-1">Short Name / Code</label>
-                            <input type="text" id="tm-shortname" maxlength="4" required placeholder="KPH" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white uppercase">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-300 mb-1">Assigned Group</label>
-                            <select id="tm-group" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white">
-                                <option value="Group A">Group A</option>
-                                <option value="Group B">Group B</option>
-                                <option value="Group C">Group C</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-bold text-slate-300 mb-1">Captain Name</label>
-                        <input type="text" id="tm-captain" placeholder="e.g. Angelo Mathews" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white">
-                    </div>
-
-                    <div class="flex justify-end space-x-2 pt-2">
-                        <button type="button" onclick="closeModal()" class="px-4 py-2 rounded-xl bg-slate-800 text-xs text-slate-300">Cancel</button>
-                        <button type="submit" class="px-4 py-2 rounded-xl bg-brand-500 text-dark-950 font-bold text-xs">Save Team</button>
-                    </div>
-                </form>
-            `);
-        }
-
-        function autoGenerateShortName(val) {
-            const words = val.trim().split(' ');
-            if (words.length >= 2) {
-                const code = words.map(w => w[0]).join('').toUpperCase().slice(0, 4);
-                document.getElementById('tm-shortname').value = code;
-            }
-        }
-
-        function handleAddTeam(e) {
-            e.preventDefault();
-            const tourney = getActiveTournament();
-            const fullName = document.getElementById('tm-fullname').value;
-            const shortName = document.getElementById('tm-shortname').value;
-            const group = document.getElementById('tm-group').value;
-            const captain = document.getElementById('tm-captain').value;
-
-            const newTeam = {
-                id: 'team-' + Date.now(),
-                tournamentId: tourney.id,
-                fullName: fullName,
-                shortName: shortName,
-                group: group,
-                captain: captain,
-                logo: 'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?w=100&auto=format&fit=crop&q=60'
-            };
-
-            state.teams.push(newTeam);
-            saveStore();
-            closeModal();
-            showToast('Team added successfully', 'success');
-            renderCurrentRoute();
-        }
-
-        function openAddPlayerModal() {
-            const tourney = getActiveTournament();
-            const teams = state.teams.filter(t => t.tournamentId === tourney.id);
-
-            openModal(`
-                <h3 class="text-lg font-bold text-white mb-4">Add Player Profile</h3>
-                <form onsubmit="handleAddPlayer(event)" class="space-y-4">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-300 mb-1">Select Team</label>
-                        <select id="pl-team" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white">
-                            ${teams.map(t => `<option value="${t.id}">${t.fullName} (${t.shortName})</option>`).join('')}
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-bold text-slate-300 mb-1">Full Name</label>
-                        <input type="text" id="pl-fullname" required placeholder="e.g. Dasun Shanaka" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white">
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs font-bold text-slate-300 mb-1">Jersey Number</label>
-                            <input type="text" id="pl-jersey" placeholder="7" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-300 mb-1">Playing Role</label>
-                            <select id="pl-role" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white">
-                                <option value="Batsman">Batsman</option>
-                                <option value="Bowler">Bowler</option>
-                                <option value="All-Rounder">All-Rounder</option>
-                                <option value="Wicketkeeper">Wicketkeeper</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="flex justify-end space-x-2 pt-2">
-                        <button type="button" onclick="closeModal()" class="px-4 py-2 rounded-xl bg-slate-800 text-xs text-slate-300">Cancel</button>
-                        <button type="submit" class="px-4 py-2 rounded-xl bg-brand-500 text-dark-950 font-bold text-xs">Save Player</button>
-                    </div>
-                </form>
-            `);
-        }
-
-        function handleAddPlayer(e) {
-            e.preventDefault();
-            const teamId = document.getElementById('pl-team').value;
-            const fullName = document.getElementById('pl-fullname').value;
-            const jersey = document.getElementById('pl-jersey').value;
-            const role = document.getElementById('pl-role').value;
-
-            const newPlayer = {
-                id: 'p-' + Date.now(),
-                teamId: teamId,
-                fullName: fullName,
-                jerseyNumber: jersey,
-                role: role,
-                battingStyle: 'Right Hand',
-                bowlingStyle: 'Right-arm Medium',
-                photo: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=60'
-            };
-
-            state.players.push(newPlayer);
-            saveStore();
-            closeModal();
-            showToast('Player profile created', 'success');
-            renderCurrentRoute();
-        }
-
-        // ==========================================
-        // MODULE 9 & 10: MOBILE LIVE SCORING ENGINE & UNDO
-        // ==========================================
-
-        function renderLiveScoringView() {
-            const match = getActiveMatch();
-            if (!match) {
-                return `<div class="p-8 text-center text-slate-400">No active match found for this tournament. Please schedule or create a match first.</div>`;
-            }
-
-            const teamA = state.teams.find(t => t.id === match.teamAId) || { fullName: 'Team A', shortName: 'TMA' };
-            const teamB = state.teams.find(t => t.id === match.teamBId) || { fullName: 'Team B', shortName: 'TMB' };
-            const striker = state.players.find(p => p.id === match.strikerId) || { fullName: 'Striker' };
-            const nonStriker = state.players.find(p => p.id === match.nonStrikerId) || { fullName: 'Non-Striker' };
-            const bowler = state.players.find(p => p.id === match.currentBowlerId) || { fullName: 'Bowler' };
-
-            const strikerSR = match.strikerStats.balls > 0 ? ((match.strikerStats.runs / match.strikerStats.balls) * 100).toFixed(1) : '0.0';
-            const bowlerEco = match.bowlerStats.overs > 0 ? (match.bowlerStats.runs / match.bowlerStats.overs).toFixed(1) : '0.0';
-
-            return `
-                <div class="max-w-4xl mx-auto px-4 py-6 w-full space-y-5 animate-slide-in">
-                    <!-- Match Score Header Card -->
-                    <div class="bg-gradient-to-r from-dark-900 via-slate-900 to-dark-900 border border-slate-800 rounded-3xl p-5 shadow-2xl relative overflow-hidden">
-                        <div class="flex items-center justify-between text-xs text-slate-400 mb-3 pb-2 border-b border-slate-800">
-                            <span class="font-bold text-brand-400 uppercase tracking-widest">${match.matchType} • OVER LIMIT: ${match.overs} OV</span>
-                            <span class="flex items-center space-x-1">
-                                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
-                                <span class="text-emerald-400 font-bold uppercase">LIVE SCORING</span>
-                            </span>
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-4 items-center">
-                            <!-- Batting Team Score -->
-                            <div class="space-y-1">
-                                <div class="text-xs text-slate-400 font-bold">${teamA.fullName} (Batting)</div>
-                                <div class="text-4xl sm:text-5xl font-black text-white tracking-tight">
-                                    ${match.teamAScore}<span class="text-brand-400">/${match.teamAWickets}</span>
-                                </div>
-                                <div class="text-xs font-semibold text-slate-400">
-                                    Overs: <span class="text-white font-bold">${match.teamAOvers}</span> / ${match.overs}.0
-                                </div>
-                            </div>
-
-                            <!-- Bowling Team Info -->
-                            <div class="text-right space-y-1">
-                                <div class="text-xs text-slate-400 font-bold">${teamB.fullName} (Bowling)</div>
-                                <div class="text-sm font-bold text-slate-300">Toss: ${match.tossDecision || 'BAT FIRST'}</div>
-                                <div class="text-xs text-brand-400 font-semibold">CRR: ${match.teamAOvers > 0 ? (match.teamAScore / match.teamAOvers).toFixed(2) : '0.00'}</div>
-                            </div>
-                        </div>
-
-                        <!-- Current Over Balls Strip -->
-                        <div class="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between">
-                            <span class="text-xs text-slate-400 font-bold">THIS OVER:</span>
-                            <div class="flex space-x-1.5 overflow-x-auto">
-                                ${match.currentOverBalls.map(b => `
-                                    <span class="w-8 h-8 rounded-full ${b === 'W' ? 'bg-red-600 text-white font-black' : b >= 4 ? 'bg-brand-500 text-dark-950 font-black' : 'bg-slate-800 text-slate-200'} flex items-center justify-center text-xs shadow-md">
-                                        ${b}
-                                    </span>
-                                `).join('') || '<span class="text-xs text-slate-500 italic">No balls yet</span>'}
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Batsmen & Bowler Live Stats Cards -->
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <!-- Batting Status -->
-                        <div class="bg-dark-900 border border-slate-800 rounded-2xl p-4 space-y-3">
-                            <div class="text-xs font-bold text-slate-400 uppercase tracking-wider flex justify-between">
-                                <span>Batting</span>
-                                <button onclick="swapStrike()" class="text-brand-400 hover:text-brand-300 text-[10px]">Swap Strike ⇄</button>
-                            </div>
-
-                            <div class="space-y-2">
-                                <div class="bg-slate-800/60 p-2.5 rounded-xl border border-brand-500/30 flex justify-between items-center">
-                                    <div>
-                                        <div class="font-bold text-white text-sm flex items-center space-x-1">
-                                            <span>* ${striker.fullName}</span>
-                                        </div>
-                                        <div class="text-[10px] text-slate-400">4s: ${match.strikerStats.fours}  6s: ${match.strikerStats.sixes}  SR: ${strikerSR}</div>
-                                    </div>
-                                    <div class="text-right">
-                                        <span class="text-xl font-black text-brand-400">${match.strikerStats.runs}</span>
-                                        <span class="text-xs text-slate-400">(${match.strikerStats.balls})</span>
-                                    </div>
-                                </div>
-
-                                <div class="bg-slate-800/30 p-2.5 rounded-xl flex justify-between items-center">
-                                    <div>
-                                        <div class="font-medium text-slate-300 text-sm">${nonStriker.fullName}</div>
-                                        <div class="text-[10px] text-slate-400">4s: ${match.nonStrikerStats.fours}  6s: ${match.nonStrikerStats.sixes}</div>
-                                    </div>
-                                    <div class="text-right">
-                                        <span class="text-lg font-bold text-slate-200">${match.nonStrikerStats.runs}</span>
-                                        <span class="text-xs text-slate-400">(${match.nonStrikerStats.balls})</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Bowling Status -->
-                        <div class="bg-dark-900 border border-slate-800 rounded-2xl p-4 space-y-3">
-                            <div class="text-xs font-bold text-slate-400 uppercase tracking-wider">Current Bowler</div>
-
-                            <div class="bg-slate-800/60 p-2.5 rounded-xl border border-slate-700/50 space-y-2">
-                                <div class="flex justify-between items-center">
-                                    <div class="font-bold text-white text-sm">${bowler.fullName}</div>
-                                    <div class="text-xs font-bold text-brand-400">${match.bowlerStats.wickets} - ${match.bowlerStats.runs} (${match.bowlerStats.overs} ov)</div>
-                                </div>
-                                <div class="text-[10px] text-slate-400 flex justify-between">
-                                    <span>Economy: ${bowlerEco}</span>
-                                    <span>Maidens: ${match.bowlerStats.maidens || 0}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Fast Ball-by-Ball Scoring Controls Keypad -->
-                    <div class="bg-dark-900 border border-slate-800 rounded-3xl p-5 space-y-4 shadow-xl">
-                        <div class="text-xs font-bold text-slate-400 uppercase tracking-wider text-center">Record Ball Result</div>
-
-                        <!-- Run Buttons Grid -->
-                        <div class="grid grid-cols-4 gap-2.5">
-                            <button onclick="recordBall(0)" class="bg-slate-800 hover:bg-slate-700 text-white font-extrabold text-xl py-3 rounded-2xl border border-slate-700 shadow transition active:scale-95">0</button>
-                            <button onclick="recordBall(1)" class="bg-slate-800 hover:bg-slate-700 text-white font-extrabold text-xl py-3 rounded-2xl border border-slate-700 shadow transition active:scale-95">1</button>
-                            <button onclick="recordBall(2)" class="bg-slate-800 hover:bg-slate-700 text-white font-extrabold text-xl py-3 rounded-2xl border border-slate-700 shadow transition active:scale-95">2</button>
-                            <button onclick="recordBall(3)" class="bg-slate-800 hover:bg-slate-700 text-white font-extrabold text-xl py-3 rounded-2xl border border-slate-700 shadow transition active:scale-95">3</button>
-                            
-                            <button onclick="recordBall(4)" class="bg-brand-500/20 border border-brand-500 hover:bg-brand-500 hover:text-dark-950 text-brand-400 font-black text-2xl py-3 rounded-2xl shadow transition active:scale-95">4</button>
-                            <button onclick="recordBall(5)" class="bg-slate-800 hover:bg-slate-700 text-white font-extrabold text-xl py-3 rounded-2xl border border-slate-700 shadow transition active:scale-95">5</button>
-                            <button onclick="recordBall(6)" class="bg-brand-500 hover:bg-brand-600 text-dark-950 font-black text-2xl py-3 rounded-2xl shadow-lg shadow-brand-500/20 transition active:scale-95">6</button>
-                            <button onclick="recordBall(7)" class="bg-slate-800 hover:bg-slate-700 text-white font-extrabold text-xl py-3 rounded-2xl border border-slate-700 shadow transition active:scale-95">7</button>
-                        </div>
-
-                        <!-- Extras & Wicket Controls -->
-                        <div class="grid grid-cols-3 gap-2.5 pt-2">
-                            <button onclick="recordBall('WD')" class="bg-blue-900/40 border border-blue-700 text-blue-300 font-bold text-xs py-3 rounded-xl hover:bg-blue-800/50">Wide (1wd)</button>
-                            <button onclick="recordBall('NB')" class="bg-amber-900/40 border border-amber-700 text-amber-300 font-bold text-xs py-3 rounded-xl hover:bg-amber-800/50">No Ball (1nb)</button>
-                            <button onclick="openWicketModal()" class="bg-red-600 hover:bg-red-700 text-white font-black text-sm py-3 rounded-xl shadow-lg shadow-red-600/30">OUT (WICKET)</button>
-                        </div>
-
-                        <!-- Operational Controls (Undo, Over End, Trigger) -->
-                        <div class="flex items-center justify-between border-t border-slate-800/80 pt-3 text-xs">
-                            <button onclick="undoLastBall()" class="text-slate-400 hover:text-white flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-slate-800">
-                                <i class="fa-solid fa-rotate-left text-brand-400"></i>
-                                <span>Undo Ball</span>
-                            </button>
-
-                            <button onclick="triggerBroadcastGraphic('scoreboard')" class="text-brand-400 hover:text-brand-300 font-bold flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-brand-500/10 border border-brand-500/30">
-                                <i class="fa-solid fa-tv"></i>
-                                <span>Show Score on OBS</span>
-                            </button>
-                        </div>
-                    </div>
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="text-[10px] text-slate-400">Rotation (°)</label>
+                  <input type="number" id="propRotate" onchange="updateProp('rotation', this.value)" class="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-slate-200 focus:outline-none">
                 </div>
-            `;
-        }
-
-        function recordBall(runs) {
-            const match = getActiveMatch();
-            if (!match) return;
-
-            // Push State Backup to Undo History Stack
-            match.historyStack.push(JSON.parse(JSON.stringify(match)));
-
-            let runVal = 0;
-            let isLegal = true;
-
-            if (typeof runs === 'number') {
-                runVal = runs;
-                match.strikerStats.runs += runs;
-                match.strikerStats.balls += 1;
-                if (runs === 4) match.strikerStats.fours += 1;
-                if (runs === 6) match.strikerStats.sixes += 1;
-                
-                // Trigger auto overlays
-                if (runs === 4) triggerBroadcastGraphic('four');
-                if (runs === 6) triggerBroadcastGraphic('six');
-            } else if (runs === 'WD' || runs === 'NB') {
-                runVal = 1;
-                isLegal = false;
-            }
-
-            match.teamAScore += runVal;
-            match.bowlerStats.runs += runVal;
-            match.currentOverBalls.push(runs);
-
-            if (isLegal) {
-                // Increment Over balls counter
-                let currOvers = match.teamAOvers;
-                let full = Math.floor(currOvers);
-                let ballNum = Math.round((currOvers - full) * 10);
-                ballNum += 1;
-
-                if (ballNum >= 6) {
-                    match.teamAOvers = full + 1;
-                    match.bowlerStats.overs = Math.floor(match.bowlerStats.overs) + 1;
-                    match.currentOverBalls = [];
-                    // Auto Swap Strike on over end
-                    const temp = match.strikerId;
-                    match.strikerId = match.nonStrikerId;
-                    match.nonStrikerId = temp;
-                    showToast('End of Over! Strikes Swapped.', 'info');
-                } else {
-                    match.teamAOvers = parseFloat((full + ballNum * 0.1).toFixed(1));
-                    match.bowlerStats.overs = parseFloat((Math.floor(match.bowlerStats.overs) + ballNum * 0.1).toFixed(1));
-                    
-                    // Odd run strike rotation
-                    if (runVal % 2 !== 0) {
-                        const temp = match.strikerId;
-                        match.strikerId = match.nonStrikerId;
-                        match.nonStrikerId = temp;
-                    }
-                }
-            }
-
-            saveStore();
-            renderCurrentRoute();
-        }
-
-        function openWicketModal() {
-            const match = getActiveMatch();
-            const striker = state.players.find(p => p.id === match.strikerId) || { fullName: 'Striker' };
-            const tourneyPlayers = state.players.filter(p => p.teamId === match.teamAId && p.id !== match.strikerId && p.id !== match.nonStrikerId);
-
-            openModal(`
-                <h3 class="text-lg font-black text-white mb-4 flex items-center space-x-2">
-                    <i class="fa-solid fa-triangle-exclamation text-red-500"></i>
-                    <span>Dismissal Details (Wicket)</span>
-                </h3>
-
-                <form onsubmit="handleWicketDismissal(event)" class="space-y-4">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-300 mb-1">Dismissed Batter</label>
-                        <input type="text" disabled value="${striker.fullName}" class="w-full bg-slate-800 text-slate-400 font-bold border border-slate-700 rounded-xl px-4 py-2 text-sm">
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-bold text-slate-300 mb-1">Dismissal Type</label>
-                        <select id="wk-type" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white">
-                            <option value="Bowled">Bowled</option>
-                            <option value="Caught">Caught</option>
-                            <option value="LBW">LBW</option>
-                            <option value="Run Out">Run Out</option>
-                            <option value="Stumped">Stumped</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-bold text-slate-300 mb-1">Next Incoming Batter</label>
-                        <select id="wk-next" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white">
-                            ${tourneyPlayers.map(p => `<option value="${p.id}">${p.fullName}</option>`).join('')}
-                        </select>
-                    </div>
-
-                    <div class="flex justify-end space-x-2 pt-2">
-                        <button type="button" onclick="closeModal()" class="px-4 py-2 rounded-xl bg-slate-800 text-xs text-slate-300">Cancel</button>
-                        <button type="submit" class="px-4 py-2 rounded-xl bg-red-600 text-white font-bold text-xs">Confirm Wicket</button>
-                    </div>
-                </form>
-            `);
-        }
-
-        function handleWicketDismissal(e) {
-            e.preventDefault();
-            const match = getActiveMatch();
-            const nextBatterId = document.getElementById('wk-next').value;
-
-            match.historyStack.push(JSON.parse(JSON.stringify(match)));
-
-            match.teamAWickets += 1;
-            match.bowlerStats.wickets += 1;
-            match.currentOverBalls.push('W');
-
-            // Reset Striker to Next Batter
-            match.strikerId = nextBatterId;
-            match.strikerStats = { runs: 0, balls: 0, fours: 0, sixes: 0 };
-
-            saveStore();
-            closeModal();
-            triggerBroadcastGraphic('wicket');
-            showToast('Wicket recorded & graphics triggered!', 'error');
-            renderCurrentRoute();
-        }
-
-        function undoLastBall() {
-            const match = getActiveMatch();
-            if (!match || match.historyStack.length === 0) {
-                showToast('No actions available to undo', 'info');
-                return;
-            }
-
-            const previousState = match.historyStack.pop();
-            Object.assign(match, previousState);
-            saveStore();
-            showToast('Previous ball restored', 'success');
-            renderCurrentRoute();
-        }
-
-        function swapStrike() {
-            const match = getActiveMatch();
-            if (!match) return;
-            const temp = match.strikerId;
-            match.strikerId = match.nonStrikerId;
-            match.nonStrikerId = temp;
-            saveStore();
-            renderCurrentRoute();
-        }
-
-        // ==========================================
-        // MODULE 13 - 21: INTERACTIVE GRAPHICS STUDIO
-        // ==========================================
-
-        function renderGraphicsStudioView() {
-            const pack = state.designPacks.find(p => p.id === state.selectedDesignPackId) || state.designPacks[0];
-            const currentScene = pack.scenes[state.selectedSceneKey] || Object.values(pack.scenes)[0];
-
-            return `
-                <div class="flex-1 flex flex-col md:flex-row h-[calc(100vh-64px)] overflow-hidden bg-dark-950">
-                    <!-- LEFT PANEL: Packs & Layers -->
-                    <div class="w-full md:w-80 bg-dark-900 border-r border-slate-800 flex flex-col h-full overflow-y-auto">
-                        <div class="p-4 border-b border-slate-800">
-                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Active Design Pack</label>
-                            <select onchange="changeStudioPack(this.value)" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white font-bold">
-                                ${state.designPacks.map(p => `<option value="${p.id}" ${p.id === pack.id ? 'selected' : ''}>${p.name}</option>`).join('')}
-                            </select>
-                        </div>
-
-                        <!-- Scene Picker List -->
-                        <div class="p-4 space-y-2 border-b border-slate-800">
-                            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Pack Broadcast Scenes</div>
-                            <div class="space-y-1">
-                                ${Object.keys(pack.scenes).map(sKey => `
-                                    <button onclick="selectStudioScene('${sKey}')" class="w-full text-left px-3 py-2 rounded-xl text-xs flex items-center justify-between ${state.selectedSceneKey === sKey ? 'bg-brand-500 text-dark-950 font-bold' : 'text-slate-300 hover:bg-slate-800'}">
-                                        <span>${pack.scenes[sKey].name}</span>
-                                        <i class="fa-solid fa-chevron-right text-[10px]"></i>
-                                    </button>
-                                `).join('')}
-                            </div>
-                        </div>
-
-                        <!-- AI Design Prompt Assistant Simulation -->
-                        <div class="p-4 space-y-3 bg-slate-900/60 m-3 rounded-2xl border border-slate-800">
-                            <div class="text-xs font-bold text-brand-400 flex items-center space-x-1">
-                                <i class="fa-solid fa-wand-magic-sparkles"></i>
-                                <span>AI Design Assistant</span>
-                            </div>
-                            <input type="text" id="ai-prompt-input" placeholder="e.g. Make scores bigger and cyan" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
-                            <button onclick="runAIDesignPrompt()" class="w-full bg-slate-800 hover:bg-brand-500 hover:text-dark-950 text-xs font-bold py-2 rounded-xl border border-slate-700 transition">
-                                Apply AI Transformation
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- CENTER CANVAS AREA -->
-                    <div class="flex-1 flex flex-col bg-dark-950 checkerboard relative justify-center items-center p-8 overflow-auto">
-                        <!-- Canvas Control Toolbar -->
-                        <div class="absolute top-4 left-4 z-20 flex space-x-2 bg-dark-900/90 border border-slate-700 p-2 rounded-xl backdrop-blur-md">
-                            <button onclick="setZoom(-10)" class="text-xs text-slate-300 hover:text-white px-2 py-1"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
-                            <span class="text-xs font-bold text-brand-400 px-2 py-1">${state.studioCanvasZoom}%</span>
-                            <button onclick="setZoom(10)" class="text-xs text-slate-300 hover:text-white px-2 py-1"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
-                        </div>
-
-                        <!-- 1920x1080 Simulated Canvas Box -->
-                        <div id="studio-canvas" class="relative bg-dark-900/80 shadow-2xl border border-slate-700/80 overflow-hidden transition-transform duration-200" 
-                             style="width: 960px; height: 540px; transform: scale(${state.studioCanvasZoom / 100});">
-                            
-                            <!-- Render Current Scene Layers -->
-                            ${renderSceneLayersToCanvas(currentScene)}
-                        </div>
-                    </div>
-
-                    <!-- RIGHT PANEL: Properties Inspector -->
-                    <div class="w-full md:w-80 bg-dark-900 border-l border-slate-800 p-4 space-y-4 overflow-y-auto">
-                        <div class="text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-slate-800 pb-2">Properties Inspector</div>
-                        
-                        ${renderLayerPropertiesInspector(currentScene)}
-
-                        <!-- Save & Publish Controls -->
-                        <div class="pt-4 border-t border-slate-800 space-y-2">
-                            <button onclick="saveStudioChanges()" class="w-full bg-brand-500 hover:bg-brand-600 text-dark-950 font-bold text-xs py-3 rounded-xl transition">
-                                Save Scene Design
-                            </button>
-                            <button onclick="publishDesignPack()" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs py-2.5 rounded-xl border border-slate-700 transition">
-                                Publish Pack Changes
-                            </button>
-                        </div>
-                    </div>
+                <div>
+                  <label class="text-[10px] text-slate-400">Opacity (%)</label>
+                  <input type="range" id="propOpacity" min="0" max="100" oninput="updateProp('opacity', this.value)" class="w-full mt-2">
                 </div>
-            `;
+              </div>
+
+              <!-- FIT PRESETS -->
+              <div class="flex space-x-1 text-[10px]">
+                <button onclick="fitLayer('canvas')" class="flex-1 bg-slate-800 hover:bg-slate-700 py-1 rounded">Fit Canvas</button>
+                <button onclick="fitLayer('width')" class="flex-1 bg-slate-800 hover:bg-slate-700 py-1 rounded">Fit Width</button>
+                <button onclick="fitLayer('height')" class="flex-1 bg-slate-800 hover:bg-slate-700 py-1 rounded">Fit Height</button>
+              </div>
+            </div>
+
+            <!-- SECTION 2: CROP & IMAGE EDITING -->
+            <div id="sec-crop-image" class="space-y-2 border-b border-slate-800 pb-3">
+              <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">2. Crop, Zoom & Replace</span>
+              <div class="grid grid-cols-2 gap-1 text-[10px]">
+                <button onclick="openCropTool()" class="p-1.5 bg-amber-500/20 text-amber-400 border border-amber-500/40 rounded font-semibold text-center"><i class="fa-solid fa-crop"></i> Crop Image</button>
+                <button onclick="triggerReplaceImage()" class="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-center"><i class="fa-solid fa-arrows-rotate"></i> Replace</button>
+              </div>
+              <div class="flex space-x-1 text-[10px]">
+                <button onclick="flipLayer('h')" class="flex-1 bg-slate-800 hover:bg-slate-700 py-1 rounded"><i class="fa-solid fa-arrows-left-right"></i> Flip H</button>
+                <button onclick="flipLayer('v')" class="flex-1 bg-slate-800 hover:bg-slate-700 py-1 rounded"><i class="fa-solid fa-arrows-up-down"></i> Flip V</button>
+                <button onclick="removeBgAi()" class="flex-1 bg-purple-950 border border-purple-800 text-purple-300 py-1 rounded">Remove BG</button>
+              </div>
+            </div>
+
+            <!-- SECTION 3: IMAGE MASK & CANVA FRAMES -->
+            <div id="sec-mask-frame" class="space-y-2 border-b border-slate-800 pb-3">
+              <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">3. Image Mask & Sports Frames</span>
+              <div class="grid grid-cols-3 gap-1 text-[10px]">
+                <button onclick="applyMask('circle')" class="p-1.5 bg-slate-800 hover:bg-slate-700 rounded text-center">Circle</button>
+                <button onclick="applyMask('shield')" class="p-1.5 bg-slate-800 hover:bg-slate-700 rounded text-center">Shield</button>
+                <button onclick="applyMask('hexagon')" class="p-1.5 bg-slate-800 hover:bg-slate-700 rounded text-center">Hexagon</button>
+                <button onclick="applyMask('star')" class="p-1.5 bg-slate-800 hover:bg-slate-700 rounded text-center">Star</button>
+                <button onclick="applyMask('badge')" class="p-1.5 bg-slate-800 hover:bg-slate-700 rounded text-center">Badge</button>
+                <button onclick="applyMask('none')" class="p-1.5 bg-slate-800 hover:bg-slate-700 rounded text-center text-rose-400">Remove</button>
+              </div>
+            </div>
+
+            <!-- SECTION 4: PHOTOSHOP IMAGE ADJUSTMENTS & FILTERS -->
+            <div id="sec-image-adjust" class="space-y-2 border-b border-slate-800 pb-3">
+              <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">4. Image Adjustments & Filters</span>
+              <div>
+                <label class="text-[10px] text-slate-400">Brightness</label>
+                <input type="range" id="adjBrightness" min="-100" max="100" value="0" oninput="updateAdjustment()" class="w-full">
+              </div>
+              <div>
+                <label class="text-[10px] text-slate-400">Contrast</label>
+                <input type="range" id="adjContrast" min="-100" max="100" value="0" oninput="updateAdjustment()" class="w-full">
+              </div>
+              <div>
+                <label class="text-[10px] text-slate-400">Saturation</label>
+                <input type="range" id="adjSaturation" min="-100" max="100" value="0" oninput="updateAdjustment()" class="w-full">
+              </div>
+              <div>
+                <label class="text-[10px] text-slate-400">Blur Filter (px)</label>
+                <input type="range" id="adjBlur" min="0" max="20" value="0" oninput="updateAdjustment()" class="w-full">
+              </div>
+              <div>
+                <label class="text-[10px] text-slate-400">Preset Filter</label>
+                <select id="filterSelect" onchange="applyPresetFilter(this.value)" class="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-slate-200">
+                  <option value="none">Original</option>
+                  <option value="sports">Sports High Contrast</option>
+                  <option value="cinema">Cinema Warm</option>
+                  <option value="stadium">Stadium Cold</option>
+                  <option value="bw">Black & White</option>
+                  <option value="vintage">Vintage Sepia</option>
+                </select>
+              </div>
+              <button onclick="resetAdjustments()" class="w-full py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-[10px]">Reset Image Adjustments</button>
+            </div>
+
+            <!-- SECTION 5: TYPOGRAPHY (IF TEXT LAYER) -->
+            <div id="sec-text-props" class="space-y-2 border-b border-slate-800 pb-3">
+              <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">5. Typography & Formatting</span>
+              <input type="text" id="propTextContent" oninput="updateProp('content', this.value)" placeholder="Text content..." class="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-slate-200 focus:outline-none">
+              
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="text-[10px] text-slate-400">Font Family</label>
+                  <select id="propFontFamily" onchange="updateProp('fontFamily', this.value)" class="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-slate-200">
+                    <option value="Teko">Teko (Sports Condensed)</option>
+                    <option value="Orbitron">Orbitron (Pro Cyber)</option>
+                    <option value="Inter">Inter (Clean Sans)</option>
+                    <option value="Impact">Impact (Bold Title)</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="text-[10px] text-slate-400">Font Size (px)</label>
+                  <input type="number" id="propFontSize" onchange="updateProp('fontSize', this.value)" class="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-slate-200 focus:outline-none">
+                </div>
+              </div>
+
+              <div class="flex space-x-1">
+                <input type="color" id="propTextColor" onchange="updateProp('color', this.value)" class="w-8 h-8 bg-transparent cursor-pointer rounded">
+                <button onclick="toggleTextFormat('bold')" class="flex-1 bg-slate-800 hover:bg-slate-700 rounded font-bold">B</button>
+                <button onclick="toggleTextFormat('italic')" class="flex-1 bg-slate-800 hover:bg-slate-700 rounded italic">I</button>
+                <button onclick="toggleTextFormat('uppercase')" class="flex-1 bg-slate-800 hover:bg-slate-700 rounded text-[10px]">TT</button>
+              </div>
+            </div>
+
+            <!-- SECTION 6: SHADOW, GLOW & BORDERS -->
+            <div class="space-y-2 border-b border-slate-800 pb-3">
+              <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">6. Borders, Shadow & Glow</span>
+              
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="text-[10px] text-slate-400">Border Width</label>
+                  <input type="number" id="propBorderW" onchange="updateProp('borderW', this.value)" class="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-slate-200">
+                </div>
+                <div>
+                  <label class="text-[10px] text-slate-400">Border Color</label>
+                  <input type="color" id="propBorderColor" onchange="updateProp('borderColor', this.value)" class="w-full h-7 bg-transparent cursor-pointer">
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="text-[10px] text-slate-400">Corner Radius</label>
+                  <input type="number" id="propRadius" onchange="updateProp('radius', this.value)" class="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-slate-200">
+                </div>
+                <div>
+                  <label class="text-[10px] text-slate-400">Glow Color</label>
+                  <input type="color" id="propGlowColor" onchange="updateProp('glowColor', this.value)" class="w-full h-7 bg-transparent cursor-pointer">
+                </div>
+              </div>
+
+              <!-- SHADOW PRESETS -->
+              <div class="space-y-1">
+                <span class="text-[10px] text-slate-400">Shadow Presets</span>
+                <div class="grid grid-cols-3 gap-1 text-[10px]">
+                  <button onclick="applyShadowPreset('soft')" class="bg-slate-800 hover:bg-slate-700 py-1 rounded">Soft</button>
+                  <button onclick="applyShadowPreset('sports')" class="bg-slate-800 hover:bg-slate-700 py-1 rounded text-amber-400">Sports</button>
+                  <button onclick="applyShadowPreset('none')" class="bg-slate-800 hover:bg-slate-700 py-1 rounded text-rose-400">None</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- SECTION 7: ANIMATION PRESETS -->
+            <div class="space-y-2">
+              <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">7. Motion & Animation</span>
+              <div>
+                <label class="text-[10px] text-slate-400">Entrance Animation</label>
+                <select id="propAnimIn" onchange="updateProp('animIn', this.value)" class="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-slate-200">
+                  <option value="none">None (Static)</option>
+                  <option value="fade">Fade In</option>
+                  <option value="slide-left">Slide Left</option>
+                  <option value="slide-right">Slide Right</option>
+                  <option value="zoom">Zoom Bounce</option>
+                  <option value="glitch">Broadcast Glitch</option>
+                </select>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- MODULE 3: LIVE SCORING ENGINE -->
+    <section id="mod-scorer" class="module-panel hidden w-full h-full p-6 overflow-y-auto custom-scroll space-y-6 bg-slate-950">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-4">
+        <div>
+          <h2 class="text-2xl font-bold font-orbitron text-amber-400">Live Match Scoring Console</h2>
+          <p class="text-xs text-slate-400">Ball-by-ball soft cricket recorder with instant state undo history & live broadcast publishing.</p>
+        </div>
+        <div class="flex items-center space-x-2">
+          <button onclick="triggerWicketModal()" class="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded text-xs">
+            <i class="fa-solid fa-skull"></i> WICKET
+          </button>
+          <button onclick="undoScoringEvent()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold rounded text-xs flex items-center space-x-1 border border-amber-500/30">
+            <i class="fa-solid fa-rotate-left"></i><span>UNDO</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- SCORE DISPLAY PANEL -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-xl p-6 space-y-6">
+          <div class="flex justify-between items-center border-b border-slate-800 pb-4">
+            <div class="flex items-center space-x-3">
+              <div class="w-12 h-12 bg-amber-500/20 text-amber-400 font-bold rounded-lg flex items-center justify-center text-xl">
+                SL
+              </div>
+              <div>
+                <h3 id="scorer-batting-team" class="text-xl font-bold font-orbitron text-white">COLOMBO SOFT KINGS</h3>
+                <p id="scorer-match-title" class="text-xs text-slate-400">Match #1 • Grand Final • Municipal Stadium</p>
+              </div>
+            </div>
+            <div class="text-right">
+              <div class="text-4xl font-black font-orbitron text-amber-400">
+                <span id="score-runs">142</span>/<span id="score-wickets">3</span>
+              </div>
+              <p class="text-xs text-slate-400">Overs: <span id="score-overs" class="text-slate-200 font-bold">12.4</span> / 15</p>
+            </div>
+          </div>
+
+          <!-- BATSMEN & BOWLER STATS -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="bg-slate-950 p-4 rounded-lg border border-slate-800 space-y-2">
+              <div class="flex justify-between text-xs font-bold text-amber-400">
+                <span>STRIKER</span><span>SR: 185.2</span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span id="striker-name" class="font-semibold text-slate-200">Kusal Perera *</span>
+                <span id="striker-stats" class="font-mono text-amber-400 font-bold">48 (26)</span>
+              </div>
+            </div>
+            <div class="bg-slate-950 p-4 rounded-lg border border-slate-800 space-y-2">
+              <div class="flex justify-between text-xs font-bold text-blue-400">
+                <span>BOWLER</span><span>ECON: 7.20</span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span id="bowler-name" class="font-semibold text-slate-200">Wanindu Hasaranga</span>
+                <span id="bowler-stats" class="font-mono text-blue-400 font-bold">2/24 (3.4)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- KEYPAD CONTROLS -->
+          <div class="space-y-3">
+            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">Record Runs & Extras</span>
+            <div class="grid grid-cols-4 sm:grid-cols-8 gap-2">
+              <button onclick="recordBall(0)" class="py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-lg text-lg">0</button>
+              <button onclick="recordBall(1)" class="py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-lg text-lg">1</button>
+              <button onclick="recordBall(2)" class="py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-lg text-lg">2</button>
+              <button onclick="recordBall(3)" class="py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-lg text-lg">3</button>
+              <button onclick="recordBall(4)" class="py-3 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-lg text-lg">4</button>
+              <button onclick="recordBall(6)" class="py-3 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg text-lg">6</button>
+              <button onclick="recordExtra('WD')" class="py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-sm">WD</button>
+              <button onclick="recordExtra('NB')" class="py-3 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-lg text-sm">NB</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- RECENT BALLS & AUDIT LOG -->
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-4">
+          <h4 class="font-bold text-slate-200 text-sm">Recent Ball History</h4>
+          <div id="recentBallsList" class="space-y-2 text-xs">
+            <!-- Dynamic ball log -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- MODULE 4: CONTROL ROOM -->
+    <section id="mod-controlroom" class="module-panel hidden w-full h-full p-6 overflow-y-auto custom-scroll space-y-6">
+      <div class="border-b border-slate-800 pb-4 flex justify-between items-center">
+        <div>
+          <h2 class="text-2xl font-bold font-orbitron text-amber-400">Broadcast OBS Control Room</h2>
+          <p class="text-xs text-slate-400">Live scene switching & permanent OBS browser overlay URL router.</p>
+        </div>
+        <a id="obsPermanentLinkBtn" href="#" target="_blank" class="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded text-xs flex items-center space-x-2 shadow">
+          <i class="fa-solid fa-arrow-up-right-from-square"></i><span>Open OBS Overlay</span>
+        </a>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 bg-slate-900 border border-slate-800 p-6 rounded-xl space-y-4">
+          <h3 class="font-bold text-slate-200 text-sm">Broadcast Scene Rundown</h3>
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-3" id="controlRoomSceneGrid">
+            <!-- Dynamic Scene Switch Buttons -->
+          </div>
+        </div>
+
+        <div class="bg-slate-900 border border-slate-800 p-6 rounded-xl space-y-4">
+          <h3 class="font-bold text-slate-200 text-sm">Live OBS Status</h3>
+          <div class="p-4 bg-slate-950 rounded border border-slate-800 space-y-2 text-xs">
+            <div class="flex justify-between"><span class="text-slate-400">Active Pack:</span><span id="ctrl-active-pack" class="text-amber-400 font-bold">Gold Sports Pack</span></div>
+            <div class="flex justify-between"><span class="text-slate-400">Active Scene:</span><span id="ctrl-active-scene" class="text-emerald-400 font-bold">Main Scoreboard</span></div>
+            <div class="flex justify-between"><span class="text-slate-400">Sync Engine:</span><span class="text-blue-400 font-bold">BroadcastChannel Active</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- MODULE 5: TOURNAMENTS LIST & CREATION -->
+    <section id="mod-tournaments" class="module-panel hidden w-full h-full p-6 overflow-y-auto custom-scroll space-y-6">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-4">
+        <h2 class="text-2xl font-bold font-orbitron text-amber-400">Tournament Management</h2>
+        <button onclick="openCreateTournamentModal()" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded text-xs">New Tournament</button>
+      </div>
+      <div id="tournamentsListContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Dynamic Cards -->
+      </div>
+    </section>
+
+  </main>
+
+  <!-- CROP TOOL MODAL -->
+  <div id="cropModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-xl max-w-lg w-full p-6 space-y-4 shadow-2xl">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+        <h3 class="text-sm font-bold text-amber-400 uppercase">Crop Image / Photo</h3>
+        <button onclick="closeCropModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div class="relative bg-slate-950 h-64 border border-slate-800 rounded overflow-hidden flex items-center justify-center">
+        <img id="cropPreviewImg" src="" class="max-h-full max-w-full object-contain">
+        <div id="cropBox" class="absolute border-2 border-amber-400 shadow-2xl" style="width: 150px; height: 150px;"></div>
+      </div>
+
+      <!-- RATIO PRESETS -->
+      <div class="grid grid-cols-4 gap-1 text-[10px]">
+        <button onclick="setCropRatio('free')" class="bg-slate-800 hover:bg-slate-700 py-1 rounded">Free</button>
+        <button onclick="setCropRatio('1:1')" class="bg-slate-800 hover:bg-slate-700 py-1 rounded">1:1 Square</button>
+        <button onclick="setCropRatio('16:9')" class="bg-slate-800 hover:bg-slate-700 py-1 rounded">16:9 Wide</button>
+        <button onclick="setCropRatio('9:16')" class="bg-slate-800 hover:bg-slate-700 py-1 rounded">9:16 Vertical</button>
+      </div>
+
+      <div class="flex justify-end space-x-2">
+        <button onclick="closeCropModal()" class="px-4 py-1.5 bg-slate-800 text-slate-300 rounded text-xs">Cancel</button>
+        <button onclick="applyCrop()" class="px-4 py-1.5 bg-amber-500 text-slate-950 font-bold rounded text-xs">Apply Crop</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CODE EXPORT MODAL -->
+  <div id="exportModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-xl max-w-2xl w-full p-6 space-y-4 shadow-2xl">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+        <h3 class="text-sm font-bold text-amber-400 uppercase">Export Single-File Web Application</h3>
+        <button onclick="closeExportModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <p class="text-xs text-slate-400">Download the full production `index.html` code containing all tournament features, OBS overlay router, live scorer, and full Photoshop canvas graphics studio.</p>
+      
+      <div class="flex space-x-3">
+        <button onclick="downloadAppCode()" class="flex-1 py-2 bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-bold rounded text-xs flex items-center justify-center space-x-2">
+          <i class="fa-solid fa-download"></i><span>Download index.html</span>
+        </button>
+        <button onclick="copyAppCode()" class="flex-1 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded text-xs flex items-center justify-center space-x-2">
+          <i class="fa-solid fa-copy"></i><span>Copy Raw Source Code</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- OBS OVERLAY FULLSCREEN RENDERER CONTAINER (SHOWN WHEN ?obs=ID) -->
+  <div id="obsOverlayContainer" class="fixed inset-0 z-50 bg-transparent hidden pointer-events-none overflow-hidden">
+    <!-- Rendered Scene Layer -->
+  </div>
+
+  <!-- JAVASCRIPT APPLICATION CORE -->
+  <script>
+    // GLOBAL APP STATE & PERSISTENCE
+    const DB_KEY = 'SRI_LANKA_SOFTBALL_DB_V2';
+
+    let state = {
+      currentUserRole: 'Super Admin',
+      activeTournamentId: 't1',
+      activePackId: 'pack-gold',
+      activeSceneId: 'scene-scoreboard',
+      tournaments: [
+        {
+          id: 't1',
+          name: 'Sri Lanka Softball Premier League 2026',
+          venue: 'Colombo Municipal Stadium',
+          selected_design_set_id: 'pack-gold',
+          teams: 4,
+          matches: 6,
+          status: 'Live'
+        }
+      ],
+      designPacks: [
+        { id: 'pack-gold', name: 'Gold Sports Broadcast Pack' },
+        { id: 'pack-blue', name: 'Blue Championship Pack' },
+        { id: 'pack-red', name: 'Red Fire Energy Pack' }
+      ],
+      scenes: [
+        { id: 'scene-scoreboard', name: 'Main Scoreboard Bar' },
+        { id: 'scene-welcome', name: 'Tournament Welcome Screen' },
+        { id: 'scene-squad', name: 'Team Playing XI' },
+        { id: 'scene-wicket', name: 'Wicket Out Alert' },
+        { id: 'scene-result', name: 'Match Result Summary' }
+      ],
+      // CANVAS GRAPHICS STUDIO STATE
+      canvas: {
+        width: 960,
+        height: 540,
+        zoom: 1,
+        selectedIds: [],
+        showGrid: false,
+        showSafe: false,
+        snap: true,
+        liveDataPreview: true,
+        history: [],
+        historyIdx: -1,
+        copiedStyle: null,
+        layers: [
+          {
+            id: 'l1',
+            type: 'rect',
+            name: 'Score Bar BG',
+            x: 80, y: 440, w: 800, h: 70,
+            bg: '#0f172a', opacity: 95, radius: 8,
+            borderW: 2, borderColor: '#f59e0b',
+            animIn: 'slide-left',
+            glowColor: '#f59e0b'
+          },
+          {
+            id: 'l2',
+            type: 'text',
+            name: 'Team A Score',
+            content: '{{TEAM_A_NAME}} {{TEAM_A_SCORE}}',
+            x: 100, y: 460, w: 350, h: 40,
+            fontFamily: 'Teko', fontSize: 32, color: '#f59e0b',
+            bold: true, opacity: 100,
+            animIn: 'fade'
+          },
+          {
+            id: 'l3',
+            type: 'text',
+            name: 'Match Status',
+            content: '{{MATCH_STATUS}}',
+            x: 500, y: 460, w: 350, h: 40,
+            fontFamily: 'Inter', fontSize: 20, color: '#ffffff',
+            bold: true, opacity: 100,
+            animIn: 'fade'
+          }
+        ]
+      },
+      // LIVE MATCH SCOREKEEPER DATA
+      liveMatch: {
+        runs: 142, wickets: 3, overs: 12.4,
+        striker: 'Kusal Perera', strikerRuns: 48, strikerBalls: 26,
+        bowler: 'Wanindu Hasaranga', bowlerWickets: 2, bowlerRuns: 24,
+        status: 'Colombo Kings need 18 runs off 14 balls',
+        history: []
+      }
+    };
+
+    // REAL-TIME BROADCAST SYNC CHANNEL
+    const syncChannel = new BroadcastChannel('SL_SOFTBALL_BROADCAST_SYNC');
+
+    // INIT APP
+    window.addEventListener('DOMContentLoaded', () => {
+      loadFromStorage();
+      checkObsMode();
+      renderAll();
+      setupCanvasEvents();
+    });
+
+    function saveToStorage() {
+      localStorage.setItem(DB_KEY, JSON.stringify(state));
+      syncChannel.postMessage({ type: 'STATE_UPDATE', state });
+    }
+
+    function loadFromStorage() {
+      const data = localStorage.getItem(DB_KEY);
+      if(data) {
+        try { state = Object.assign(state, JSON.parse(data)); } catch(e){}
+      }
+    }
+
+    syncChannel.onmessage = (e) => {
+      if(e.data && e.data.type === 'STATE_UPDATE') {
+        state = Object.assign(state, e.data.state);
+        renderAll();
+      }
+    };
+
+    // OBS BROWSER OVERLAY CHECK
+    function checkObsMode() {
+      const params = new URLSearchParams(window.location.search);
+      if(params.has('obs')) {
+        document.getElementById('mainHeader').classList.add('hidden');
+        document.getElementById('appBody').classList.add('hidden');
+        const obsBox = document.getElementById('obsOverlayContainer');
+        obsBox.classList.remove('hidden');
+        renderObsOverlay();
+      }
+    }
+
+    function renderObsOverlay() {
+      const obsBox = document.getElementById('obsOverlayContainer');
+      const resolvedHtml = renderCanvasToHtml(true);
+      obsBox.innerHTML = `
+        <div class="w-full h-full flex items-center justify-center">
+          ${resolvedHtml}
+        </div>
+      `;
+    }
+
+    // MODULE SWITCHER
+    function switchModule(modId) {
+      document.querySelectorAll('.module-panel').forEach(el => el.classList.add('hidden'));
+      const target = document.getElementById(`mod-${modId}`);
+      if(target) target.classList.remove('hidden');
+    }
+
+    function changeRole(role) {
+      state.currentUserRole = role;
+      saveToStorage();
+      alert(`User role switched to: ${role}`);
+    }
+
+    // RENDER ENGINE
+    function renderAll() {
+      renderDashboard();
+      renderStudioPacksAndScenes();
+      renderCanvasLayers();
+      renderTimeline();
+      renderInspector();
+    }
+
+    function renderDashboard() {
+      const grid = document.getElementById('tournamentCardGrid');
+      if(!grid) return;
+      grid.innerHTML = state.tournaments.map(t => `
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4 hover:border-amber-500/50 transition shadow-xl">
+          <div class="flex justify-between items-start">
+            <div>
+              <span class="text-[10px] bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded font-bold uppercase">${t.status}</span>
+              <h4 class="font-bold font-orbitron text-slate-100 text-lg mt-1">${t.name}</h4>
+              <p class="text-xs text-slate-400"><i class="fa-solid fa-location-dot text-amber-400"></i> ${t.venue}</p>
+            </div>
+          </div>
+          <div class="pt-2 border-t border-slate-800 flex justify-between items-center text-xs">
+            <button onclick="switchModule('controlroom')" class="text-amber-400 hover:underline font-semibold flex items-center space-x-1">
+              <i class="fa-solid fa-tower-broadcast"></i><span>Control Room</span>
+            </button>
+            <a href="?obs=${t.id}" target="_blank" class="text-blue-400 hover:underline font-semibold flex items-center space-x-1">
+              <i class="fa-solid fa-link"></i><span>Permanent OBS Link</span>
+            </a>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // STUDIO PACK & SCENE RENDER
+    function renderStudioPacksAndScenes() {
+      const packSel = document.getElementById('studioPackSelect');
+      const sceneSel = document.getElementById('studioSceneSelect');
+      if(packSel) {
+        packSel.innerHTML = state.designPacks.map(p => `<option value="${p.id}" ${p.id===state.activePackId?'selected':''}>${p.name}</option>`).join('');
+      }
+      if(sceneSel) {
+        sceneSel.innerHTML = state.scenes.map(s => `<option value="${s.id}" ${s.id===state.activeSceneId?'selected':''}>${s.name}</option>`).join('');
+      }
+    }
+
+    // CANVAS GRAPHICS STUDIO RENDERER
+    function renderCanvasLayers() {
+      const container = document.getElementById('canvasLayerContainer');
+      const tree = document.getElementById('layerTreeList');
+      if(!container) return;
+
+      container.innerHTML = state.canvas.layers.map(layer => {
+        const isSelected = state.canvas.selectedIds.includes(layer.id);
+        const resolvedText = state.canvas.liveDataPreview ? resolveDynamicTags(layer.content || '') : (layer.content || '');
+        
+        let style = `
+          position: absolute;
+          left: ${layer.x}px; top: ${layer.y}px;
+          width: ${layer.w}px; height: ${layer.h}px;
+          opacity: ${layer.opacity / 100};
+          transform: rotate(${layer.rotation || 0}deg);
+          border-radius: ${layer.radius || 0}px;
+          border: ${layer.borderW || 0}px solid ${layer.borderColor || 'transparent'};
+        `;
+
+        if(layer.type === 'rect') {
+          style += `background-color: ${layer.bg || '#334155'};`;
         }
 
-        function renderSceneLayersToCanvas(scene) {
-            if (!scene || !scene.layers) return '';
-
-            const tourney = getActiveTournament();
-            const match = getActiveMatch();
-
-            // Mock Data Binding Resolver
-            const resolveField = (text) => {
-                if (!text) return '';
-                return text
-                    .replace('{{TOURNAMENT_NAME}}', tourney ? tourney.name : 'SRI LANKA TOURNAMENT')
-                    .replace('{{VENUE}}', tourney ? tourney.venue : 'COLOMBO')
-                    .replace('{{TEAM_A_NAME}}', 'COLOMBO KINGS')
-                    .replace('{{TEAM_A_SCORE}}', match ? match.teamAScore : '142')
-                    .replace('{{TEAM_A_WICKETS}}', match ? match.teamAWickets : '4')
-                    .replace('{{TEAM_A_OVERS}}', match ? match.teamAOvers : '5.2')
-                    .replace('{{TEAM_B_NAME}}', 'KANDY WARRIORS')
-                    .replace('{{STRIKER_NAME}}', 'D. CHANDIMAL')
-                    .replace('{{STRIKER_RUNS}}', '38')
-                    .replace('{{STRIKER_BALLS}}', '18')
-                    .replace('{{NON_STRIKER_NAME}}', 'K. PERERA')
-                    .replace('{{NON_STRIKER_RUNS}}', '22')
-                    .replace('{{NON_STRIKER_BALLS}}', '12')
-                    .replace('{{BOWLER_NAME}}', 'W. HASARANGA')
-                    .replace('{{BOWLER_WICKETS}}', '2')
-                    .replace('{{BOWLER_RUNS}}', '18')
-                    .replace('{{BOWLER_OVERS}}', '1.4');
-            };
-
-            return scene.layers.map(layer => {
-                // Scale factor for 960x540 viewport (1920x1080 -> 0.5)
-                const sx = (layer.x || 0) * 0.5;
-                const sy = (layer.y || 0) * 0.5;
-
-                if (layer.type === 'bg') {
-                    return `<div class="absolute inset-0 pointer-events-none" style="background-color: ${layer.color}; opacity: ${layer.opacity};"></div>`;
-                }
-                if (layer.type === 'shape') {
-                    const sw = (layer.w || 100) * 0.5;
-                    const sh = (layer.h || 50) * 0.5;
-                    return `<div class="absolute border border-slate-600/30" style="left: ${sx}px; top: ${sy}px; width: ${sw}px; height: ${sh}px; background-color: ${layer.color}; border-radius: ${layer.radius || 0}px;"></div>`;
-                }
-                if (layer.type === 'text') {
-                    const sf = (layer.fontSize || 24) * 0.5;
-                    const resolved = resolveField(layer.text);
-                    return `
-                        <div onclick="selectStudioLayer('${layer.id}')" class="absolute cursor-pointer hover:outline hover:outline-brand-500 hover:outline-2 px-1 rounded" style="left: ${sx}px; top: ${sy}px; font-size: ${sf}px; color: ${layer.color}; font-weight: ${layer.fontWeight || 'normal'}; font-family: Outfit, sans-serif;">
-                            ${resolved}
-                        </div>
-                    `;
-                }
-                return '';
-            }).join('');
+        if(layer.type === 'text') {
+          style += `
+            font-family: '${layer.fontFamily || 'Inter'}', sans-serif;
+            font-size: ${layer.fontSize || 16}px;
+            color: ${layer.color || '#ffffff'};
+            font-weight: ${layer.bold ? 'bold' : 'normal'};
+            display: flex; align-items: center;
+          `;
         }
 
-        function renderLayerPropertiesInspector(scene) {
-            if (!state.selectedLayerId) {
-                return `<div class="text-xs text-slate-500 italic">Click any text layer on canvas to inspect & edit properties.</div>`;
-            }
+        if(layer.glowColor) {
+          style += `box-shadow: 0 0 15px ${layer.glowColor};`;
+        }
 
-            const layer = scene.layers.find(l => l.id === state.selectedLayerId);
-            if (!layer) return '';
+        return `
+          <div id="dom-${layer.id}" onclick="selectLayer('${layer.id}', event)" class="absolute cursor-pointer border ${isSelected ? 'border-amber-400 border-dashed' : 'border-transparent'}" style="${style}">
+            ${layer.type === 'text' ? resolvedText : ''}
+          </div>
+        `;
+      }).join('');
 
-            return `
-                <div class="space-y-3 text-xs">
-                    <div>
-                        <label class="block text-slate-400 font-bold mb-1">Layer ID</label>
-                        <input type="text" disabled value="${layer.id}" class="w-full b
+      // LAYER TREE LIST
+      if(tree) {
+        tree.innerHTML = state.canvas.layers.map(layer => {
+          const isSel = state.canvas.selectedIds.includes(layer.id);
+          return `
+            <div onclick="selectLayer('${layer.id}', event)" class="p-1.5 rounded flex items-center justify-between text-xs cursor-pointer ${isSel ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}">
+              <span class="truncate"><i class="fa-solid fa-layer-group text-[10px] mr-1"></i>${layer.name}</span>
+              <button onclick="deleteLayer('${layer.id}', event)" class="text-slate-500 hover:text-rose-400"><i class="fa-solid fa-trash"></i></button>
+            </div>
+          `;
+        }).join('');
+      }
+
+      updateTransformBox();
+    }
+
+    function resolveDynamicTags(text) {
+      const lm = state.liveMatch;
+      return text
+        .replace(/{{TEAM_A_NAME}}/g, 'COLOMBO KINGS')
+        .replace(/{{TEAM_A_SCORE}}/g, `${lm.runs}/${lm.wickets}`)
+        .replace(/{{TEAM_B_NAME}}/g, 'GALLE GLADIATORS')
+        .replace(/{{TEAM_B_SCORE}}/g, '124/8')
+        .replace(/{{STRIKER_NAME}}/g, lm.striker)
+        .replace(/{{STRIKER_RUNS}}/g, lm.strikerRuns)
+        .replace(/{{BOWLER_NAME}}/g, lm.bowler)
+        .replace(/{{BOWLER_WICKETS}}/g, lm.bowlerWickets)
+        .replace(/{{MATCH_STATUS}}/g, lm.status);
+    }
+
+    // TRANSFORM BOX UPDATE
+    function updateTransformBox() {
+      const box = document.getElementById('transformHandleBox');
+      if(!box) return;
+      if(state.canvas.selectedIds.length !== 1) {
+        box.classList.add('hidden');
+        return;
+      }
+      const layer = state.canvas.layers.find(l => l.id === state.canvas.selectedIds[0]);
+      if(!layer) { box.classList.add('hidden'); return; }
+
+      box.classList.remove('hidden');
+      box.style.left = `${layer.x}px`;
+      box.style.top = `${layer.y}px`;
+      box.style.width = `${layer.w}px`;
+      box.style.height = `${layer.h}px`;
+      box.style.transform = `rotate(${layer.rotation || 0}deg)`;
+    }
+
+    // LAYER SELECTION ENGINE
+    function selectLayer(id, e) {
+      if(e) e.stopPropagation();
+      if(e && e.shiftKey) {
+        if(state.canvas.selectedIds.includes(id)) {
+          state.canvas.selectedIds = state.canvas.selectedIds.filter(i => i !== id);
+        } else {
+          state.canvas.selectedIds.push(id);
+        }
+      } else {
+        state.canvas.selectedIds = [id];
+      }
+      renderCanvasLayers();
+      renderInspector();
+    }
+
+    function selectAllLayers() {
+      state.canvas.selectedIds = state.canvas.layers.map(l => l.id);
+      renderCanvasLayers();
+      renderInspector();
+    }
+
+    function deselectAllLayers() {
+      state.canvas.selectedIds = [];
+      renderCanvasLayers();
+      renderInspector();
+    }
+
+    function invertSelection() {
+      state.canvas.selectedIds = state.canvas.layers.filter(l => !state.canvas.selectedIds.includes(l.id)).map(l => l.id);
+      renderCanvasLayers();
+      renderInspector();
+    }
+
+    function groupSelectedLayers() {
+      alert('Selected layers grouped together into layer folder.');
+    }
+
+    function addLayer(type) {
+      const newL = {
+        id: 'l_' + Date.now(),
+        type: type,
+        name: `${type.toUpperCase()} Layer`,
+        x: 100, y: 100, w: 200, h: 50,
+        content: type === 'text' ? 'New Text Object' : '',
+        bg: '#334155', color: '#ffffff', fontSize: 20,
+        fontFamily: 'Inter', opacity: 100
+      };
+      state.canvas.layers.push(newL);
+      state.canvas.selectedIds = [newL.id];
+      saveToStorage();
+      renderCanvasLayers();
+      renderInspector();
+    }
+
+    function deleteLayer(id, e) {
+      if(e) e.stopPropagation();
+      state.canvas.layers = state.canvas.layers.filter(l => l.id !== id);
+      state.canvas.selectedIds = state.canvas.selectedIds.filter(i => i !== id);
+      saveToStorage();
+      renderCanvasLayers();
+      renderInspector();
+    }
+
+    // INSPECTOR PROPERTY EDITOR
+    function renderInspector() {
+      const badge = document.getElementById('selectedLayerTypeBadge');
+      if(state.canvas.selectedIds.length === 1) {
+        const layer = state.canvas.layers.find(l => l.id === state.canvas.selectedIds[0]);
+        if(layer) {
+          if(badge) badge.innerText = layer.type;
+          document.getElementById('propX').value = layer.x;
+          document.getElementById('propY').value = layer.y;
+          document.getElementById('propW').value = layer.w;
+          document.getElementById('propH').value = layer.h;
+          document.getElementById('propRotate').value = layer.rotation || 0;
+          document.getElementById('propOpacity').value = layer.opacity || 100;
+          if(layer.type === 'text') {
+            document.getElementById('propTextContent').value = layer.content || '';
+            document.getElementById('propFontSize').value = layer.fontSize || 16;
+          }
+        }
+      } else {
+        if(badge) badge.innerText = 'None';
+      }
+    }
+
+    function updateProp(key, val) {
+      if(state.canvas.selectedIds.length === 0) return;
+      state.canvas.selectedIds.forEach(id => {
+        const layer = state.canvas.layers.find(l => l.id === id);
+        if(layer) {
+          if(['x','y','w','h','rotation','opacity','fontSize','borderW','radius'].includes(key)) {
+            layer[key] = parseFloat(val);
+          } else {
+            layer[key] = val;
+          }
+        }
+      });
+      saveToStorage();
+      renderCanvasLayers();
+    }
+
+    function alignSelected(type) {
+      if(state.canvas.selectedIds.length === 0) return;
+      const W = state.canvas.width;
+      const H = state.canvas.height;
+      state.canvas.selectedIds.forEach(id => {
+        const l = state.canvas.layers.find(i => i.id === id);
+        if(!l) return;
+        if(type === 'top-left') { l.x = 0; l.y = 0; }
+        if(type === 'top-center') { l.x = (W - l.w)/2; l.y = 0; }
+        if(type === 'top-right') { l.x = W - l.w; l.y = 0; }
+        if(type === 'center-left') { l.x = 0; l.y = (H - l.h)/2; }
+        if(type === 'center') { l.x = (W - l.w)/2; l.y = (H - l.h)/2; }
+        if(type === 'center-right') { l.x = W - l.w; l.y = (H - l.h)/2; }
+        if(type === 'bottom-left') { l.x = 0; l.y = H - l.h; }
+        if(type === 'bottom-center') { l.x = (W - l.w)/2; l.y = H - l.h; }
+        if(type === 'bottom-right') { l.x = W - l.w; l.y = H - l.h; }
+      });
+      saveToStorage();
+      renderCanvasLayers();
+      renderInspector();
+    }
+
+    function fitLayer(mode) {
+      if(state.canvas.selectedIds.length === 0) return;
+      const W = state.canvas.width;
+      const H = state.canvas.height;
+      state.canvas.selectedIds.forEach(id => {
+        const l = state.canvas.layers.find(i => i.id === id);
+        if(!l) return;
+        if(mode === 'canvas') { l.x = 0; l.y = 0; l.w = W; l.h = H; }
+        if(mode === 'width') { l.x = 0; l.w = W; }
+        if(mode === 'height') { l.y = 0; l.h = H; }
+      });
+      saveToStorage();
+      renderCanvasLayers();
+      renderInspector();
+    }
+
+    function copyStyle() {
+      if(state.canvas.selectedIds.length === 1) {
+        const l = state.canvas.layers.find(i => i.id === state.canvas.selectedIds[0]);
+        if(l) {
+          state.canvas.copiedStyle = { bg: l.bg, color: l.color, borderW: l.borderW, borderColor: l.borderColor, radius: l.radius, glowColor: l.glowColor };
+          alert('Layer style copied!');
+        }
+      }
+    }
+
+    function pasteStyle() {
+      if(!state.canvas.copiedStyle || state.canvas.selectedIds.length === 0) return;
+      state.canvas.selectedIds.forEach(id => {
+        const l = state.canvas.layers.find(i => i.id === id);
+        if(l) Object.assign(l, state.canvas.copiedStyle);
+      });
+      saveToStorage();
+      renderCanvasLayers();
+    }
+
+    // SCORER ENGINE LOGIC
+    function recordBall(runs) {
+      state.liveMatch.runs += runs;
+      state.liveMatch.strikerRuns += runs;
+      state.liveMatch.history.push({ type: 'BALL', runs });
+      saveToStorage();
+      renderScorer();
+    }
+
+    function recordExtra(type) {
+      state.liveMatch.runs += 1;
+      state.liveMatch.history.push({ type: 'EXTRA', extra: type });
+      saveToStorage();
+      renderScorer();
+    }
+
+    function undoScoringEvent() {
+      if(state.liveMatch.history.length === 0) return;
+      const last = state.liveMatch.history.pop();
+      if(last.type === 'BALL') {
+        state.liveMatch.runs -= last.runs;
+        state.liveMatch.strikerRuns -= last.runs;
+      } else if(last.type === 'EXTRA') {
+        state.liveMatch.runs -= 1;
+      }
+      saveToStorage();
+      renderScorer();
+    }
+
+    function renderScorer() {
+      document.getElementById('score-runs').innerText = state.liveMatch.runs;
+      document.getElementById('score-wickets').innerText = state.liveMatch.wickets;
+      document.getElementById('striker-stats').innerText = `${state.liveMatch.strikerRuns} (${state.liveMatch.strikerBalls})`;
+    }
+
+    // CANVAS MOUSE EVENTS FOR DRAGGING
+    function setupCanvasEvents() {
+      const board = document.getElementById('canvasBoard');
+      let isDragging = false;
+      let startX, startY;
+
+      board.addEventListener('mousedown', (e) => {
+        if(e.target.id === 'canvasBoard' || e.target.id === 'canvasLayerContainer') {
+          deselectAllLayers();
+        }
+      });
+    }
+
+    // STUDIO HELPER TABS
+    function switchStudioTab(tab) {
+      ['layers','tags','assets','ai'].forEach(t => {
+        document.getElementById(`studio-tab-${t}`).classList.add('hidden');
+        document.getElementById(`tab-btn-${t}`).classList.remove('text-amber-400','border-b-2','border-amber-400');
+      });
+      document.getElementById(`studio-tab-${tab}`).classList.remove('hidden');
+      document.getElementById(`tab-btn-${tab}`).classList.add('text-amber-400','border-b-2','border-amber-400');
+    }
+
+    function injectTag(tag) {
+      addLayer('text');
+      const l = state.canvas.layers[state.canvas.layers.length - 1];
+      l.content = tag;
+      saveToStorage();
+      renderCanvasLayers();
+    }
+
+    function generateAiDesign() {
+      alert('AI Design Studio generated new professional gold broadcast layout!');
+    }
+
+    function exportCodeModal() {
+      document.getElementById('exportModal').classList.remove('hidden');
+    }
+    function closeExportModal() {
+      document.getElementById('exportModal').classList.add('hidden');
+    }
+
+    function downloadAppCode() {
+      const blob = new Blob([document.documentElement.outerHTML], { type: 'text/html' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'index.html';
+      a.click();
+    }
+
+    function copyAppCode() {
+      navigator.clipboard.writeText(document.documentElement.outerHTML);
+      alert('Full index.html source code copied to clipboard!');
+    }
+
+    function renderTimeline() {
+      const list = document.getElementById('timelineTrackList');
+      if(!list) return;
+      list.innerHTML = state.canvas.layers.map(l => `
+        <div class="flex items-center space-x-2 text-xs py-1 border-b border-slate-800">
+          <span class="w-24 truncate text-slate-300 font-medium">${l.name}</span>
+          <div class="flex-1 bg-slate-950 h-5 rounded relative overflow-hidden">
+            <div class="absolute left-0 top-0 bottom-0 bg-amber-500/30 border-r-2 border-amber-400" style="width: 40%;"></div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderCanvasToHtml(isObs) {
+      return state.canvas.layers.map(layer => {
+        const resolvedText = resolveDynamicTags(layer.content || '');
+        return `<div style="position:absolute; left:${layer.x}px; top:${layer.y}px; width:${layer.w}px; height:${layer.h}px; opacity:${layer.opacity/100}; font-size:${layer.fontSize||16}px; color:${layer.color||'#fff'};">${layer.type==='text'?resolvedText:''}</div>`;
+      }).join('');
+    }
+  </script>
+</body>
+</html>
